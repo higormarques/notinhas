@@ -103,11 +103,45 @@ atalhos/paleta. Textarea simples com autosave (debounce).
 _Pronto quando:_ criar/renomear/excluir uma nota inteiramente via teclado (script Playwright
 keyboard-only); check responsivo; testes unitários do adapter e das queries.
 
-## Fase 3 — Paleta de comandos + sistema global de atalhos — ⬜ não iniciada
+## Fase 3 — Paleta de comandos + sistema global de atalhos — ✅ concluída
 
-Command (shadcn-vue) como paleta Cmd/Ctrl+K: nova nota, ir para nota, ir para data, alternar
-tema, ir para daily desk. Registro central `useShortcuts`, lista de atalhos documentada em
-Settings.
+Command (shadcn-vue) como paleta Cmd/Ctrl+K: nova nota (cria a partir do texto digitado quando
+não há nota com esse nome), ir para nota (busca nas notas existentes), alternar tema. Registro
+central `useShortcuts` (mapa de atalho → handler, consultável por features futuras).
+
+**Escopo reduzido deliberadamente** (decisão tomada com o usuário ao iniciar esta fase): "ir
+para data"/"ir para daily desk" dependem do parser de datas e da convenção
+`Daily/YYYY-MM-DD.md`, que só chegam na Fase 5 — essas entradas de paleta são adicionadas junto
+com a própria Fase 5. "Lista de atalhos documentada em Settings" é adicionada junto com a tela
+de Settings na Fase 8, consumindo o registro `useShortcuts` já pronto desde esta fase.
+
+- [x] `useShortcuts` (`shared/composables/useShortcuts.ts`) — registro global `id → {keys,
+      description, handler}`, um único listener de `keydown` em `window` anexado lazily,
+      `trigger(id)` para acionar programaticamente o mesmo handler de um atalho (usado pelo
+      botão de busca do header), com teste unitário
+- [x] Feature `command-palette` (`CommandPalette.vue` + `useCommandPalette.ts`) — paleta
+      Cmd/Ctrl+K via `CommandDialog` do shadcn-vue: "Ir para nota" (busca sobre nova query key
+      `['notes-index']`, listagem recursiva via `StorageAdapter`), "Nova nota" (só aparece
+      quando o texto digitado não corresponde a nenhuma nota existente e a listagem de notas já
+      carregou — evita criar sobre uma nota existente por causa de uma corrida com o
+      carregamento), "Alternar tema" — com teste unitário do composable
+- [x] "Criar nota" implementado como `ListboxItem` do Reka UI usado diretamente (não o
+      `CommandItem` do shadcn-vue): como o texto exibido muda a cada tecla digitada mas
+      `Command.vue` registra o texto de busca de um item apenas uma vez no mount, o filtro
+      embutido do Reka UI ficaria sempre uma tecla atrasada; `showCreateOption` já é a única
+      fonte de verdade sobre a visibilidade desse item, então ele não precisa (nem deve) passar
+      pelo índice de busca por texto do Reka UI
+- [x] Notas existentes listadas antes da opção "Criar nota" na paleta — garante que, quando a
+      busca já corresponde a uma nota real, ela seja o item destacado por padrão (evita um
+      highlight "travado" na opção de criar no instante em que ela desaparece por já haver
+      correspondência exata)
+- [x] `AppShell` monta `<CommandPalette />` globalmente (fora dos blocos condicionais por
+      breakpoint) e ganhou um botão "Abrir paleta de comandos" no header, que aciona o mesmo
+      atalho via `useShortcuts().trigger`
+- [x] `e2e/command-palette.spec.ts` — abrir com Cmd/Ctrl+K, ir para nota existente, criar nota
+      nova, alternar tema, fechar com Escape, abrir via botão do header, tudo via
+      `page.keyboard.press`, nos 3 breakpoints, com checagem `@axe-core/playwright`
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` passando (45 testes e2e)
 
 _Pronto quando:_ toda ação da paleta é alcançável e executável sem mouse; teste Playwright
 percorre o fluxo completo só de teclado.
@@ -126,7 +160,8 @@ confirma fidelidade do round-trip markdown; check responsivo mobile.
 Calendar (shadcn-vue) como superfície de navegação. Convenção `Daily/YYYY-MM-DD.md` com criação
 automática ao navegar. Indicador visual de dias com nota + preview no hover/foco. Smart Dates no
 palette via parser leve (ex: chrono-node). Contador de tarefas por nota diária + migração de
-tarefas incompletas.
+tarefas incompletas. Inclui as entradas "ir para data" e "ir para daily desk" na paleta de
+comandos (adiadas da Fase 3 por dependerem deste parser e desta convenção de arquivo).
 
 _Pronto quando:_ navegar 30 dias só por teclado; nomes de arquivo no disco batem com a
 convenção; teste de migração move um item não marcado de um dia antigo para o dia atual.
@@ -152,8 +187,9 @@ de link via autocomplete só por teclado.
 
 Passe completo de acessibilidade (axe-core zero violações críticas, roteiro de teclado cobrindo
 cada tela). Passe responsivo nos breakpoints definidos + smoke test em dispositivo real.
-Onboarding/estados vazios/erros. Tela de Settings consolidando tema, atalhos, gestão de
-workspace. Teste de performance com fixture de ~500 notas.
+Onboarding/estados vazios/erros. Tela de Settings consolidando tema, atalhos (lista lida do
+registro `useShortcuts` da Fase 3), gestão de workspace. Teste de performance com fixture de
+~500 notas.
 
 _Pronto quando:_ regressão manual + automatizada completa passa; tag `v0.1.0-mvp`.
 

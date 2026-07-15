@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Menu, PanelRight, Moon, Sun, TriangleAlert } from '@lucide/vue'
+import { Menu, PanelRight, Moon, Search, Sun, TriangleAlert } from '@lucide/vue'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import {
@@ -14,6 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/shared/ui/sheet'
+import CommandPalette from '@/features/command-palette/CommandPalette.vue'
 import FileTree from '@/features/file-tree/FileTree.vue'
 import NoteEditor from '@/features/note-editor/NoteEditor.vue'
 import WorkspaceConnect from '@/features/workspace-connect/WorkspaceConnect.vue'
@@ -31,6 +32,7 @@ const {
   isRightSheetOpen,
   isWorkspaceConnected,
   isOpfsFallback,
+  openCommandPalette,
 } = useAppShell()
 </script>
 
@@ -38,6 +40,8 @@ const {
   <WorkspaceConnect v-if="!isWorkspaceConnected" />
 
   <div v-else class="flex h-svh w-full flex-col bg-background text-foreground">
+    <CommandPalette />
+
     <Alert v-if="isOpfsFallback" class="shrink-0 rounded-none border-x-0 border-t-0">
       <TriangleAlert class="size-4" />
       <AlertTitle>Navegador sem suporte a pasta local</AlertTitle>
@@ -86,6 +90,14 @@ const {
           @click="toggleRightPanel"
         >
           <PanelRight class="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Abrir paleta de comandos"
+          @click="openCommandPalette"
+        >
+          <Search class="size-4" />
         </Button>
         <Button
           variant="ghost"

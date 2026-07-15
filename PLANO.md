@@ -190,9 +190,14 @@ _Pronto quando:_ criar/renomear/excluir uma nota inteiramente via teclado (scrip
 keyboard-only); check responsivo; testes unitários do adapter e das queries.
 
 **Fase 3 — Paleta de comandos + sistema global de atalhos**
-Command (shadcn-vue) como paleta Cmd/Ctrl+K: nova nota, ir para nota, ir para data, alternar
-tema, ir para daily desk. Registro central `useShortcuts`, lista de atalhos documentada em
-Settings.
+Command (shadcn-vue) como paleta Cmd/Ctrl+K: nova nota (cria a partir do texto digitado quando
+não há nota com esse nome), ir para nota (busca nas notas existentes), alternar tema. Registro
+central `useShortcuts` (mapa de atalho → handler, consultável por features futuras).
+**Escopo reduzido deliberadamente**: "ir para data" e "ir para daily desk" dependem do parser de
+datas e da convenção `Daily/YYYY-MM-DD.md` que só chegam na Fase 5 — essas entradas de paleta
+são adicionadas junto com a própria Fase 5, não aqui. Da mesma forma, "lista de atalhos
+documentada em Settings" é adicionada junto com a tela de Settings na Fase 8 (consumindo o
+registro `useShortcuts` já pronto desde a Fase 3).
 _Pronto quando:_ toda ação da paleta é alcançável e executável sem mouse; teste Playwright
 percorre o fluxo completo só de teclado.
 
@@ -208,7 +213,8 @@ Calendar (shadcn-vue) como superfície de navegação (já navegável por setas 
 Convenção `Daily/YYYY-MM-DD.md` com criação automática ao navegar. Indicador visual de dias com
 nota + preview no hover/foco. Smart Dates no palette ("hoje", "ontem", "próxima sexta", datas
 explícitas) via parser leve (ex: chrono-node). Contador de tarefas por nota diária + migração de
-tarefas incompletas.
+tarefas incompletas. **Inclui as entradas "ir para data" e "ir para daily desk" na paleta de
+comandos** (adiadas da Fase 3 por dependerem deste parser e desta convenção de arquivo).
 _Pronto quando:_ navegar 30 dias só por teclado; nomes de arquivo no disco batem com a
 convenção; teste de migração move um item não marcado de um dia antigo para o dia atual.
 
@@ -230,8 +236,8 @@ de link via autocomplete só por teclado.
 Passe completo de acessibilidade (axe-core zero violações críticas, roteiro de teclado cobrindo
 cada tela). Passe responsivo nos breakpoints definidos + smoke test em dispositivo real.
 Onboarding/estados vazios/erros (permissão negada, navegador sem suporte, workspace
-desconectado). Tela de Settings consolidando tema, atalhos, gestão de workspace. Teste de
-performance com fixture de ~500 notas.
+desconectado). Tela de Settings consolidando tema, atalhos (lista lida do registro
+`useShortcuts` da Fase 3), gestão de workspace. Teste de performance com fixture de ~500 notas.
 _Pronto quando:_ regressão manual + automatizada completa passa; tag `v0.1.0-mvp`.
 
 **Explicitamente fora do roadmap do MVP (documentado em `CLAUDE.md` + ADRs):**

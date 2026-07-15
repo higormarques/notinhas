@@ -59,10 +59,16 @@ injetado a partir de `shared/storage`.
 | `['directory', path]` | listagem de uma pasta                  |
 | `['file', path]`      | conteúdo de um arquivo/nota            |
 | `['daily', date]`     | nota diária de uma data (`YYYY-MM-DD`) |
+| `['notes-index']`     | lista achatada e recursiva de todas as notas do workspace, usada pela paleta de comandos (Fase 3) para "ir para nota"/"nova nota" |
 
 Toda mutation que escreve/renomeia/apaga invalida a(s) query key(s) afetada(s). Refetch
 automático em foco/visibilidade da aba (`refetchOnWindowFocus`/`refetchOnReconnect` do Vue
 Query) é o mecanismo que substitui a ausência de filesystem watch nativo — ver ADR 0004.
+
+`['notes-index']` é uma solução provisória — percorre `listDirectory` recursivamente a partir da
+raiz a cada abertura da paleta (`staleTime: 0`, habilitada só enquanto a paleta está aberta), sem
+cache incremental. Isso é aceitável para o volume de notas esperado até aqui; a Fase 6 substitui
+essa listagem por um índice real (título + conteúdo) atualizado incrementalmente a cada escrita.
 
 ## Pinia stores
 
@@ -100,8 +106,23 @@ sempre responsabilidade do cache do TanStack Query.
 - Roving tabindex na árvore de arquivos (`src/features/file-tree/useFileTree.ts`, Fase 2):
   `role="tree"`/`role="treeitem"` com árvore renderizada em lista achatada (sem componente
   recursivo — cada linha carrega sua própria profundidade), só um item com `tabindex="0"` por
-  vez, navegação com setas/Enter/F2/Delete tratada em `handleTreeKeydown`. `useShortcuts`
-  (registro **global** de atalhos, fora do escopo de uma única árvore) ainda chega na Fase 3.
+  vez, navegação com setas/Enter/F2/Delete tratada em `handleTreeKeydown`.
+- `useShortcuts` (`shared/composables/useShortcuts.ts`, Fase 3) — registro **global** de
+  atalhos, fora do escopo de uma única árvore/feature: `register`/`unregister` mantêm um mapa
+  reativo (`id → { keys, description, handler }`) consultável futuramente pela tela de Settings
+  (Fase 8); um único listener de `keydown` em `window` é anexado lazily no primeiro `register`.
+  `trigger(id)` executa o handler de um atalho já registrado, usado por botões de UI que
+  replicam a mesma ação do atalho (ex.: o botão de busca do header aciona o mesmo handler que
+  Cmd/Ctrl+K). Segue o mesmo padrão de composable simples com estado em módulo já usado por
+  `useTheme` — só vira store Pinia se precisar ser injetado em múltiplos contextos de teste de
+  forma isolada.
+- `command-palette` (`src/features/command-palette/`, Fase 3) — paleta Cmd/Ctrl+K via
+  `CommandDialog` do shadcn-vue: "Nova nota" (aparece só quando o texto digitado não corresponde
+  a nenhuma nota existente, cria sempre na raiz do workspace), "Ir para nota" (busca sobre
+  `['notes-index']`, filtragem via `contains` embutido do componente `Command`), "Alternar
+  tema". O texto digitado é capturado via delegação do evento nativo `input` (bubbling do
+  `<input>` interno do `CommandInput`) em vez de um `v-model` direto, para não depender de
+  comportamento de merge de listeners do Reka UI.
 
 ## Testes
 
