@@ -12,10 +12,18 @@ interface StorageAdapter {
   listDirectory(path: string): Promise<DirectoryEntry[]>
   readFile(path: string): Promise<string>
   writeFile(path: string, content: string): Promise<void>
+  createDirectory(path: string): Promise<void>
   deleteFile(path: string): Promise<void>
   rename(fromPath: string, toPath: string): Promise<void>
 }
 ```
+
+`createDirectory` foi adicionado na Fase 2 para suportar "Nova pasta" na árvore de arquivos sem
+o workaround de escrever um arquivo placeholder dentro dela (ver ADR 0005). `deleteFile` serve
+tanto para arquivo quanto pasta (usa `removeEntry(name, { recursive: true })` por baixo) — não
+existe `deleteDirectory` separado. `rename` também cobre mover (origem e destino podem estar em
+diretórios diferentes); mover uma pasta é O(N) arquivos via cópia recursiva + delete, não é
+atômico.
 
 Vive em `src/shared/storage/StorageAdapter.ts` (chega na Fase 1). Duas implementações,
 selecionadas por feature-detection no boot da aplicação (`'showDirectoryPicker' in window`):
@@ -58,11 +66,12 @@ Query) é o mecanismo que substitui a ausência de filesystem watch nativo — v
 
 ## Pinia stores
 
-| Store                                 | Responsabilidade única                                                                                                                                                                                                                    |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useUiStore` (`shared/stores/ui.ts`)  | painéis abertos (esquerdo/direito) em breakpoints tablet/desktop. Já implementado na Fase 0.                                                                                                                                              |
-| `useWorkspaceStore` (chega na Fase 1) | workspace ativo (referência ao handle/adapter escolhido), estado de conexão/permissão.                                                                                                                                                    |
-| `useThemeStore`/`useTheme` composable | tema claro/escuro — hoje é um composable simples (`shared/composables/useTheme.ts`) com estado em módulo + persistência em `localStorage`; só vira store Pinia se precisar ser injetado em múltiplos contextos de teste de forma isolada. |
+| Store                                              | Responsabilidade única                                                                                                                                                                                                                    |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useUiStore` (`shared/stores/ui.ts`)               | painéis abertos (esquerdo/direito) em breakpoints tablet/desktop. Já implementado na Fase 0.                                                                                                                                              |
+| `useWorkspaceStore` (chega na Fase 1)              | workspace ativo (referência ao handle/adapter escolhido), estado de conexão/permissão.                                                                                                                                                    |
+| `useNotesStore` (`shared/stores/notes.ts`, Fase 2) | nota ativa (`activeNotePath`) — compartilhada entre `file-tree` (abre/fecha) e `note-editor` (lê); nunca guarda conteúdo de arquivo, só o caminho.                                                                                        |
+| `useThemeStore`/`useTheme` composable              | tema claro/escuro — hoje é um composable simples (`shared/composables/useTheme.ts`) com estado em módulo + persistência em `localStorage`; só vira store Pinia se precisar ser injetado em múltiplos contextos de teste de forma isolada. |
 
 Nenhuma store guarda conteúdo de arquivo, resultado de busca ou árvore de diretórios — isso é
 sempre responsabilidade do cache do TanStack Query.
@@ -88,8 +97,11 @@ sempre responsabilidade do cache do TanStack Query.
   colocado deve se comportar por breakpoint: desktop usa `ResizablePanelGroup` (3 painéis),
   tablet usa painéis colapsáveis in-place (`isLeftPanelOpen`/`isRightPanelOpen` no
   `useUiStore`), mobile usa `Sheet` como overlay disparado por botão.
-- `useShortcuts` (registro central de atalhos) e roving tabindex em árvore de arquivos/lista de
-  notas chegam na Fase 2/3 — ainda não implementados.
+- Roving tabindex na árvore de arquivos (`src/features/file-tree/useFileTree.ts`, Fase 2):
+  `role="tree"`/`role="treeitem"` com árvore renderizada em lista achatada (sem componente
+  recursivo — cada linha carrega sua própria profundidade), só um item com `tabindex="0"` por
+  vez, navegação com setas/Enter/F2/Delete tratada em `handleTreeKeydown`. `useShortcuts`
+  (registro **global** de atalhos, fora do escopo de uma única árvore) ainda chega na Fase 3.
 
 ## Testes
 

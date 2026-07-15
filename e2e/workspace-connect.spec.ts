@@ -8,7 +8,7 @@ test('connecting to a workspace is reachable and operable by keyboard alone', as
   await mockDirectoryPicker(page, 'minhas-notas')
   await page.goto('/')
 
-  await expect(page.getByText('Editor de notas (Fase 2/4)')).toBeHidden()
+  await expect(page.getByText('Selecione uma nota para editar.')).toBeHidden()
 
   const connectButton = page.getByRole('button', { name: 'Escolher pasta do workspace' })
   await connectButton.waitFor()
@@ -16,7 +16,7 @@ test('connecting to a workspace is reachable and operable by keyboard alone', as
   await expect(connectButton).toBeFocused()
   await page.keyboard.press('Enter')
 
-  await expect(page.getByText('Editor de notas (Fase 2/4)')).toBeVisible()
+  await expect(page.getByText('Selecione uma nota para editar.')).toBeVisible()
 })
 
 test('has no critical accessibility violations on the connect screen', async ({
@@ -43,6 +43,6 @@ test('falls back to OPFS automatically and shows the sandbox banner when unsuppo
   })
   await page.goto('/')
 
-  await expect(page.getByText('Editor de notas (Fase 2/4)')).toBeVisible()
+  await expect(page.getByText('Selecione uma nota para editar.')).toBeVisible()
   await expect(page.getByText('Navegador sem suporte a pasta local')).toBeVisible()
 })

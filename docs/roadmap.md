@@ -68,11 +68,37 @@ OPFS. `useWorkspaceStore` (Pinia).
 _Pronto quando:_ usuário escolhe uma pasta real, o app lembra dela entre reloads; teste
 Playwright cobre o fluxo mockando a API; conferência manual no Finder de que nada foi corrompido.
 
-## Fase 2 — Árvore de arquivos + CRUD de notas Markdown — ⬜ não iniciada
+## Fase 2 — Árvore de arquivos + CRUD de notas Markdown — ✅ concluída
 
 Queries TanStack sobre o `StorageAdapter`. Árvore de arquivos navegável por teclado (roving
 tabindex). Criar/renomear/excluir/mover nota e pasta via menu de contexto **e**
 atalhos/paleta. Textarea simples com autosave (debounce).
+
+- [x] `StorageAdapter.createDirectory` adicionado ao contrato (ADR 0005) + implementado em
+      `DirectoryHandleStorageAdapter` + testes unitários (`DirectoryHandleStorageAdapter.test.ts`
+      cobrindo list/read/write/createDirectory/delete/rename, arquivo e pasta)
+- [x] `useNotesStore` (Pinia) — nota ativa (`activeNotePath`), compartilhada entre `file-tree` e
+      `note-editor`, com teste
+- [x] Feature `file-tree` (`FileTree.vue` + `useFileTree.ts`) — árvore lazy por nível via
+      `useQueries` sobre `['directory', path]`, roving tabindex (setas/Enter/F2/Delete/N/Shift+N),
+      toolbar "Nova nota"/"Nova pasta" sempre alcançável por teclado, menu de contexto
+      (ContextMenu) como via alternativa, diálogos de criar/renomear-mover/excluir, com teste
+      unitário do composable
+- [x] Feature `note-editor` (`NoteEditor.vue` + `useNoteEditor.ts`) — textarea com autosave
+      debounced (`watchDebounced` do VueUse) sobre `['file', path]`, status
+      salvando/salvo/erro, com teste unitário do composable
+- [x] `AppShell` atualizado: placeholders da Fase 0/1 substituídos por `<FileTree />` e
+      `<NoteEditor />` nos 3 breakpoints (desktop resizable, tablet aside/main, mobile
+      Sheet/main)
+- [x] Mock de `FileSystemDirectoryHandle` completo em `e2e/mockWorkspace.ts` (entries/
+      getFileHandle/getDirectoryHandle/removeEntry/createWritable) para exercitar CRUD real via
+      Playwright
+- [x] `e2e/file-tree-crud.spec.ts` — criar/editar/renomear(mover)/excluir nota, criar pasta +
+      nota aninhada, navegar com setas, tudo via `page.keyboard.press` (sem clique), nos 3
+      breakpoints, com checagem `@axe-core/playwright`
+- [x] `e2e/shell.spec.ts` e `e2e/workspace-connect.spec.ts` atualizados para os textos reais da
+      UI (placeholders da Fase 2 removidos)
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` passando
 
 _Pronto quando:_ criar/renomear/excluir uma nota inteiramente via teclado (script Playwright
 keyboard-only); check responsivo; testes unitários do adapter e das queries.

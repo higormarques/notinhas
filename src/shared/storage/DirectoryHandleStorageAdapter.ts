@@ -39,6 +39,10 @@ export class DirectoryHandleStorageAdapter implements StorageAdapter {
     await writable.close()
   }
 
+  async createDirectory(path: string): Promise<void> {
+    await resolveDirectoryHandle(this.root, path, { create: true })
+  }
+
   async deleteFile(path: string): Promise<void> {
     const segments = splitPath(path)
     const name = segments.pop()

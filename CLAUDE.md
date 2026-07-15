@@ -44,7 +44,9 @@ ser considerada concluída.
 ```
 src/
   app/            # shell (AppShell.vue), router, providers (Pinia, VueQuery montados em main.ts)
-  entities/       # tipos de domínio: Note, DailyNote, Workspace, Tag (ainda vazio, chega na Fase 1/2)
+  entities/       # tipos de domínio: Workspace (Fase 1). DailyNote/Tag chegam nas fases
+                  # 5/7 — árvore/CRUD de nota (Fase 2) usa DirectoryEntry do StorageAdapter,
+                  # não precisou de um tipo Note dedicado
   features/       # workspace-connect, file-tree, note-editor, command-palette,
                   # daily-desk, search, tags-links, settings
                   # cada feature: ComponentName.vue + useComponentName.ts colocados
@@ -95,14 +97,17 @@ de negócio dentro do `<script setup>` do `.vue`.
   Cache, invalidação em mutations, refetch-on-focus/visibility (substituto de filesystem watch
   real — ver ADR 0004). Nunca duplicar esse estado numa store Pinia.
 
-## Contrato do `StorageAdapter` (chega na Fase 1, referência já reservada)
+## Contrato do `StorageAdapter`
 
-Interface única (`listDirectory`, `readFile`, `writeFile`, `deleteFile`, `rename`) com duas
-implementações por feature-detection: `FileSystemAccessAdapter` (`showDirectoryPicker` +
-`FileSystemDirectoryHandle`, handle persistido via IndexedDB/`idb-keyval`) e `OPFSAdapter`
-(fallback via `navigator.storage.getDirectory()`, com banner de aviso). Nenhum código de
-feature deve chamar a File System Access API ou OPFS diretamente — sempre via `StorageAdapter`
-injetado/importado de `shared/storage`. Detalhe completo em `docs/architecture.md`.
+Interface única (`listDirectory`, `readFile`, `writeFile`, `createDirectory`, `deleteFile`,
+`rename`) com duas implementações por feature-detection: `FileSystemAccessAdapter`
+(`showDirectoryPicker` + `FileSystemDirectoryHandle`, handle persistido via
+IndexedDB/`idb-keyval`) e `OPFSAdapter` (fallback via `navigator.storage.getDirectory()`, com
+banner de aviso). Nenhum código de feature deve chamar a File System Access API ou OPFS
+diretamente — sempre via `StorageAdapter` injetado/importado de `shared/storage`.
+`createDirectory` foi adicionado na Fase 2 (ver ADR 0005) — `deleteFile` já serve tanto para
+arquivo quanto pasta (`removeEntry` recursivo), não existe `deleteDirectory` separado. Detalhe
+completo em `docs/architecture.md`.
 
 ## Definition of Done — teclado e responsividade (todas as fases, sem exceção)
 

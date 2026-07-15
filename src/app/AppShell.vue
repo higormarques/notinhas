@@ -14,6 +14,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/shared/ui/sheet'
+import FileTree from '@/features/file-tree/FileTree.vue'
+import NoteEditor from '@/features/note-editor/NoteEditor.vue'
 import WorkspaceConnect from '@/features/workspace-connect/WorkspaceConnect.vue'
 import { useAppShell } from './useAppShell'
 
@@ -103,14 +105,14 @@ const {
       class="flex-1"
     >
       <ResizablePanel :default-size="20" :min-size="15" :max-size="35">
-        <div class="h-full overflow-auto p-4 text-sm text-muted-foreground">
-          Navegação (árvore de arquivos — Fase 2)
+        <div class="h-full overflow-hidden">
+          <FileTree />
         </div>
       </ResizablePanel>
       <ResizableHandle with-handle />
       <ResizablePanel :default-size="55" :min-size="30">
-        <div class="h-full overflow-auto p-4 text-sm text-muted-foreground">
-          Editor de notas (Fase 2/4)
+        <div class="h-full overflow-hidden">
+          <NoteEditor />
         </div>
       </ResizablePanel>
       <ResizableHandle with-handle />
@@ -122,14 +124,11 @@ const {
     </ResizablePanelGroup>
 
     <div v-else-if="breakpoint === 'tablet'" class="flex flex-1 overflow-hidden">
-      <aside
-        v-if="isLeftPanelOpen"
-        class="w-56 shrink-0 overflow-auto border-r p-4 text-sm text-muted-foreground"
-      >
-        Navegação (árvore de arquivos — Fase 2)
+      <aside v-if="isLeftPanelOpen" class="w-56 shrink-0 overflow-hidden border-r">
+        <FileTree />
       </aside>
-      <main class="flex-1 overflow-auto p-4 text-sm text-muted-foreground">
-        Editor de notas (Fase 2/4)
+      <main class="flex-1 overflow-hidden">
+        <NoteEditor />
       </main>
       <aside
         v-if="isRightPanelOpen"
@@ -139,8 +138,8 @@ const {
       </aside>
     </div>
 
-    <main v-else class="flex-1 overflow-auto p-4 text-sm text-muted-foreground">
-      Editor de notas (Fase 2/4)
+    <main v-else class="flex-1 overflow-hidden">
+      <NoteEditor />
     </main>
 
     <Sheet v-model:open="isLeftSheetOpen">
@@ -151,7 +150,9 @@ const {
             >Árvore de arquivos do workspace</SheetDescription
           >
         </SheetHeader>
-        <div class="p-4 text-sm text-muted-foreground">Árvore de arquivos — Fase 2</div>
+        <div class="h-full overflow-hidden">
+          <FileTree />
+        </div>
       </SheetContent>
     </Sheet>
 

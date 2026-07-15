@@ -7,9 +7,11 @@ test('shell collapses correctly for the current breakpoint', async ({
 }, testInfo) => {
   await connectMockWorkspace(page)
 
+  const emptyTree = 'Nenhuma nota ainda. Crie uma nota para começar.'
+
   if (testInfo.project.name === 'desktop') {
-    await expect(page.getByText('Navegação (árvore de arquivos — Fase 2)')).toBeVisible()
-    await expect(page.getByText('Editor de notas (Fase 2/4)')).toBeVisible()
+    await expect(page.getByText(emptyTree)).toBeVisible()
+    await expect(page.getByText('Selecione uma nota para editar.')).toBeVisible()
     await expect(
       page.getByText('Painel contextual (backlinks/propriedades — Fase 7)'),
     ).toBeVisible()
@@ -20,27 +22,27 @@ test('shell collapses correctly for the current breakpoint', async ({
   if (testInfo.project.name === 'tablet') {
     const toggle = page.getByRole('button', { name: 'Alternar navegação' })
     await expect(toggle).toBeVisible()
-    await expect(page.getByText('Navegação (árvore de arquivos — Fase 2)')).toBeVisible()
+    await expect(page.getByText(emptyTree)).toBeVisible()
 
     await toggle.focus()
     await page.keyboard.press('Enter')
-    await expect(page.getByText('Navegação (árvore de arquivos — Fase 2)')).toBeHidden()
+    await expect(page.getByText(emptyTree)).toBeHidden()
 
     await page.keyboard.press('Enter')
-    await expect(page.getByText('Navegação (árvore de arquivos — Fase 2)')).toBeVisible()
+    await expect(page.getByText(emptyTree)).toBeVisible()
   }
 
   if (testInfo.project.name === 'mobile') {
     const openLeft = page.getByRole('button', { name: 'Abrir navegação' })
     await expect(openLeft).toBeVisible()
-    await expect(page.getByText('Árvore de arquivos — Fase 2')).toBeHidden()
+    await expect(page.getByText(emptyTree)).toBeHidden()
 
     await openLeft.focus()
     await page.keyboard.press('Enter')
-    await expect(page.getByText('Árvore de arquivos — Fase 2')).toBeVisible()
+    await expect(page.getByText(emptyTree)).toBeVisible()
 
     await page.keyboard.press('Escape')
-    await expect(page.getByText('Árvore de arquivos — Fase 2')).toBeHidden()
+    await expect(page.getByText(emptyTree)).toBeHidden()
   }
 })
 
