@@ -38,7 +38,7 @@ let queryClient: QueryClient
 
 function mountComposable() {
   let result!: ReturnType<typeof useNoteEditor>
-  mount(
+  const wrapper = mount(
     defineComponent({
       setup() {
         result = useNoteEditor()
@@ -47,7 +47,7 @@ function mountComposable() {
     }),
     { global: { plugins: [[VueQueryPlugin, { queryClient }]] } },
   )
-  return result
+  return { result, wrapper }
 }
 
 describe('useNoteEditor', () => {
@@ -69,42 +69,103 @@ describe('useNoteEditor', () => {
   })
 
   it('shows the empty state when there is no active note', () => {
-    const result = mountComposable()
+    const { result } = mountComposable()
     expect(result.isEmptyState.value).toBe(true)
   })
 
-  it('loads the active note content', async () => {
+  it('loads the active note content into the editor as markdown', async () => {
     useNotesStore().openNote('nota.md')
-    const result = mountComposable()
+    const { result } = mountComposable()
     await flushPromises()
 
     expect(result.isEmptyState.value).toBe(false)
-    expect(result.content.value).toBe('conteudo inicial')
     expect(result.noteName.value).toBe('nota.md')
+    expect(result.editor.value?.getText()).toBe('conteudo inicial')
   })
 
-  it('autosaves edits after the debounce window', async () => {
+  it('autosaves edits after the debounce window, serialized back to markdown', async () => {
     useNotesStore().openNote('nota.md')
-    const result = mountComposable()
+    const { result } = mountComposable()
     await flushPromises()
 
-    result.content.value = 'conteudo editado'
+    result.editor.value?.commands.setContent('conteudo inicial editado')
     await vi.advanceTimersByTimeAsync(700)
     await flushPromises()
 
-    expect(adapter.writeFile).toHaveBeenCalledWith('nota.md', 'conteudo editado')
+    expect(adapter.writeFile).toHaveBeenCalledWith('nota.md', 'conteudo inicial editado')
     expect(result.saveStatus.value).toBe('saved')
+  })
+
+  it('round-trips headings and lists through markdown serialization', async () => {
+    useNotesStore().openNote('nota.md')
+    const { result } = mountComposable()
+    await flushPromises()
+
+    result.editor.value?.commands.setContent('# Título\n\n- item um\n- item dois', {
+      contentType: 'markdown',
+    })
+    await vi.advanceTimersByTimeAsync(700)
+    await flushPromises()
+
+    const [savedPath, savedContent] = vi.mocked(adapter.writeFile).mock.calls[0]
+    expect(savedPath).toBe('nota.md')
+    expect(savedContent.trim()).toBe('# Título\n\n- item um\n- item dois')
   })
 
   it('does not write back unchanged content just from loading a note', async () => {
     useNotesStore().openNote('nota.md')
-    const result = mountComposable()
+    const { result } = mountComposable()
     await flushPromises()
 
     await vi.advanceTimersByTimeAsync(700)
     await flushPromises()
 
     expect(adapter.writeFile).not.toHaveBeenCalled()
-    expect(result.content.value).toBe('conteudo inicial')
+    expect(result.editor.value?.getText()).toBe('conteudo inicial')
+  })
+
+  it('finds and cycles through matches in the note', async () => {
+    adapter = createFakeAdapter({ 'nota.md': 'gato cachorro gato passaro gato' })
+    vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
+    useNotesStore().openNote('nota.md')
+    const { result } = mountComposable()
+    await flushPromises()
+
+    result.findQuery.value = 'gato'
+    await flushPromises()
+
+    expect(result.findMatchCount.value).toBe(3)
+    expect(result.findActiveIndex.value).toBe(0)
+
+    result.findNext()
+    expect(result.findActiveIndex.value).toBe(1)
+
+    result.findNext()
+    expect(result.findActiveIndex.value).toBe(2)
+
+    result.findNext()
+    expect(result.findActiveIndex.value).toBe(0)
+
+    result.findPrevious()
+    expect(result.findActiveIndex.value).toBe(2)
+  })
+
+  it('clears the search when closing find', async () => {
+    adapter = createFakeAdapter({ 'nota.md': 'gato cachorro gato' })
+    vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
+    useNotesStore().openNote('nota.md')
+    const { result } = mountComposable()
+    await flushPromises()
+
+    result.openFind()
+    result.findQuery.value = 'gato'
+    await flushPromises()
+    expect(result.findMatchCount.value).toBe(2)
+
+    result.closeFind()
+
+    expect(result.isFindOpen.value).toBe(false)
+    expect(result.findQuery.value).toBe('')
+    expect(result.findMatchCount.value).toBe(0)
   })
 })

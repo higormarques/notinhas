@@ -146,11 +146,67 @@ de Settings na Fase 8, consumindo o registro `useShortcuts` já pronto desde est
 _Pronto quando:_ toda ação da paleta é alcançável e executável sem mouse; teste Playwright
 percorre o fluxo completo só de teclado.
 
-## Fase 4 — Editor WYSIWYG (Tiptap) — ⬜ não iniciada
+## Fase 4 — Editor WYSIWYG (Tiptap) — ✅ concluída
 
-Tiptap + StarterKit + extensão markdown (serializa para/de markdown). Formatação: headings,
-listas, code block com highlight, tabelas, task lists. Autosave, undo/redo, buscar dentro da
-nota (Cmd/Ctrl+F).
+Tiptap v3 (`@tiptap/vue-3` + `@tiptap/starter-kit`) substituindo a textarea da Fase 2, com a
+extensão oficial `@tiptap/markdown` fazendo a serialização para/de markdown (preferida sobre o
+pacote comunitário `tiptap-markdown`, descontinuado em favor da extensão oficial lançada no
+Tiptap 3.7.0 — ver decisão abaixo).
+
+- [x] `useNoteEditor.ts` reescrito em torno de `useEditor()`: extensões StarterKit (headings
+      restritas a níveis 1–3, histórico/undo-redo, listas, blockquote), `CodeBlockLowlight`
+      (`lowlight` + bundle `common` de linguagens) substituindo o `codeBlock` padrão do
+      StarterKit, `TaskList`/`TaskItem` de `@tiptap/extension-list`, `TableKit` de
+      `@tiptap/extension-table` (não resizable), extensão `Markdown` oficial e a extensão
+      própria `FindInNote`
+      - `Markdown` official extension escolhida em vez de `tiptap-markdown`: o próprio README do
+        pacote comunitário recomenda migrar para a extensão oficial a partir da 3.7.0; ela já
+        cobre round-trip de headings/listas/task lists/tabelas/code block nativamente (tabelas e
+        listas declaram `parseMarkdown`/`renderMarkdown` diretamente nos pacotes
+        `@tiptap/extension-table` e `@tiptap/extension-list`)
+      - Autosave: `onUpdate` chama `editor.getMarkdown()` para o `content` ref, que segue o mesmo
+        padrão `watchDebounced` + `lastSavedContent` da Fase 2; troca de nota usa
+        `setContent(data, { contentType: 'markdown', emitUpdate: false })` para não disparar
+        autosave espúrio ao carregar
+      - Estados ativos de toolbar (negrito/heading/lista ativa, canUndo/canRedo) e o contador de
+        resultados de busca são `computed` que dependem de um `updateTick` incrementado em
+        `onTransaction` — necessário porque `useEditor()` do `@tiptap/vue-3` v3 não força
+        reatividade automática do Vue a cada transação da doc (diferente do comportamento da v2)
+- [x] Extensão própria `findInNoteExtension.ts` (`FindInNote`) para "buscar dentro da nota"
+      (Cmd/Ctrl+F): plugin ProseMirror com `Decoration.inline` para destacar ocorrências +
+      comandos `setSearchTerm`/`goToSearchResult`/`clearSearchTerm`. Escrita à mão em vez de um
+      pacote de busca de terceiros porque o único disponível
+      (`@sereneinserenade/tiptap-search-and-replace`) é licença proprietária e alvo do Tiptap v2,
+      incompatível com o v3 usado aqui
+- [x] `NoteEditor.vue` reescrito: toolbar (undo/redo, H1–H3, negrito/itálico/tachado/código,
+      citação, listas com marcadores/numerada/tarefas, bloco de código, inserir tabela, busca)
+      com `Toggle`/`Button` do shadcn-vue — todos operáveis por teclado nativamente — e barra de
+      busca com contador de resultados e navegação anterior/próximo
+      - Componentes `toggle`/`toggle-group` adicionados via CLI do shadcn-vue (não existiam
+        ainda) para os botões de estado ativo da toolbar
+      - CSS do conteúdo do editor (`.note-editor-content`) em bloco `<style>` global do
+        componente, usando as CSS custom properties de tema já definidas em `style.css`
+        (`var(--border)`, `var(--muted)` etc.) — necessário porque o Tiptap renderiza elementos
+        HTML brutos (`h1`, `ul`, `pre`, `table`) que não podem receber classes Tailwind via
+        template
+- [x] Teste unitário (`useNoteEditor.test.ts`) cobrindo: estado vazio, carregamento como
+      markdown, autosave serializado de volta para markdown, round-trip de headings/listas,
+      não-reescrita de conteúdo inalterado, busca (contagem/ciclo de resultados), limpeza da
+      busca ao fechar
+- [x] `e2e/note-editor.spec.ts` novo: formata uma nota com heading/listas/code block/tabela
+      inteiramente por teclado, verifica que o conteúdo sobrevive a trocar de nota e voltar
+      (fidelidade do round-trip markdown sem depender do fluxo de reconexão pós-reload da Fase 1,
+      que segue não automatizado), busca com ciclo de resultados por teclado, checagem
+      `@axe-core/playwright` — nos 3 breakpoints
+- [x] `e2e/command-palette.spec.ts` e `e2e/file-tree-crud.spec.ts` atualizados: a nota agora é um
+      `<div role="textbox" aria-label="Conteúdo da nota">` (contenteditable do Tiptap) em vez de
+      uma `<textarea>` — locators trocados de `getByLabel(...).toHaveValue(...)` para
+      `getByRole('textbox', { name: ... }).toHaveText(...)`
+- [x] Verificação manual via `pnpm dev` num navegador real: formatação por teclado, autosave,
+      busca com ciclo de resultados, e fidelidade do round-trip confirmada após reload completo
+      da página lendo do disco real (não só do mock do Playwright)
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` passando (42 testes unitários,
+      54 testes e2e)
 
 _Pronto quando:_ nota com headings/listas/code/tabela é escrita inteiramente por teclado; reload
 confirma fidelidade do round-trip markdown; check responsivo mobile.

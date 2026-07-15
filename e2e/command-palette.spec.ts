@@ -30,7 +30,7 @@ test('opens an existing note via the command palette, keyboard only', async ({ p
   await page.keyboard.press('Enter')
 
   await expect(input).toBeHidden()
-  await expect(page.getByLabel('Conteúdo da nota')).toHaveValue('Olá mundo')
+  await expect(page.getByRole('textbox', { name: 'Conteúdo da nota' })).toHaveText('Olá mundo')
 })
 
 test('creates a new note from the command palette when there is no match, keyboard only', async ({
@@ -46,7 +46,7 @@ test('creates a new note from the command palette when there is no match, keyboa
   await page.keyboard.press('Enter')
 
   await expect(page.getByPlaceholder(PALETTE_PLACEHOLDER)).toBeHidden()
-  await expect(page.getByLabel('Conteúdo da nota')).toHaveValue('')
+  await expect(page.getByRole('textbox', { name: 'Conteúdo da nota' })).toHaveText('')
 
   await openTreeOnMobile(page, testInfo)
   await expect(

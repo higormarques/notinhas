@@ -123,6 +123,33 @@ sempre responsabilidade do cache do TanStack Query.
   tema". O texto digitado é capturado via delegação do evento nativo `input` (bubbling do
   `<input>` interno do `CommandInput`) em vez de um `v-model` direto, para não depender de
   comportamento de merge de listeners do Reka UI.
+- `note-editor` (`src/features/note-editor/`, Fase 4) — editor WYSIWYG via Tiptap v3
+  (`@tiptap/vue-3` + `@tiptap/starter-kit`), substituindo a textarea da Fase 2:
+  - **Markdown como fonte de verdade**: a extensão oficial `@tiptap/markdown` (não o pacote
+    comunitário `tiptap-markdown`, descontinuado a favor da oficial desde o Tiptap 3.7.0) provê
+    `editor.getMarkdown()` e `setContent(md, { contentType: 'markdown' })`. Headings, listas
+    (incluindo task lists) e tabelas fazem o round-trip nativamente porque `@tiptap/extension-list`
+    e `@tiptap/extension-table` já declaram `parseMarkdown`/`renderMarkdown` nos próprios nodes;
+    `CodeBlockLowlight` herda o suporte a markdown do `CodeBlock` base via `.extend()`.
+  - **Extensões registradas**: StarterKit (com `codeBlock: false` e `heading: { levels: [1,2,3] }`),
+    `CodeBlockLowlight` (lowlight + bundle `common`), `TaskList`/`TaskItem` de
+    `@tiptap/extension-list`, `TableKit` de `@tiptap/extension-table` (`resizable: false`),
+    `Markdown`, e a extensão própria `FindInNote`.
+  - **Busca dentro da nota** (`findInNoteExtension.ts`) é escrita à mão: o único pacote de
+    search/replace para Tiptap é `@sereneinserenade/tiptap-search-and-replace`, que é licença
+    proprietária e alvo do Tiptap v2 — incompatível com o v3 usado aqui. A extensão própria usa um
+    `Plugin` do ProseMirror com `Decoration.inline` para destacar ocorrências e comandos
+    `setSearchTerm`/`goToSearchResult`/`clearSearchTerm` armazenados em `editor.storage.findInNote`.
+  - **Reatividade da toolbar**: `useEditor()` do `@tiptap/vue-3` (v3) não força reatividade
+    automática do Vue a cada transação da doc (diferente do comportamento assumido na v2). Os
+    estados ativos da toolbar (negrito/heading/lista ativa, `canUndo`/`canRedo`, contagem de
+    resultados de busca) são `computed` que leem um `updateTick` incrementado no callback
+    `onTransaction` do editor — sem isso os botões da toolbar não atualizariam o estado
+    pressionado/ativo ao mover o cursor ou editar.
+  - **Autosave** segue o mesmo padrão da Fase 2 (`watchDebounced` + `lastSavedContent`), só que a
+    fonte do `content` ref agora é `editor.getMarkdown()` chamado em `onUpdate`; trocar de nota
+    chama `setContent(data, { contentType: 'markdown', emitUpdate: false })` para não disparar
+    autosave espúrio ao carregar.
 
 ## Testes
 

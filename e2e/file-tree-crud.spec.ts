@@ -40,9 +40,9 @@ test('creates, edits, renames, and deletes a note entirely via keyboard', async 
 
   await closeTreeOnMobile(page, testInfo)
 
-  const textarea = page.getByLabel('Conteúdo da nota')
-  await textarea.waitFor()
-  await textarea.focus()
+  const editorContent = page.getByRole('textbox', { name: 'Conteúdo da nota' })
+  await editorContent.waitFor()
+  await editorContent.focus()
   await page.keyboard.type('Olá mundo')
   await expect(page.getByText('Salvo')).toBeVisible({ timeout: 3000 })
 
@@ -62,7 +62,7 @@ test('creates, edits, renames, and deletes a note entirely via keyboard', async 
   await expect(noteItem).toHaveCount(0)
 
   await closeTreeOnMobile(page, testInfo)
-  await expect(page.getByLabel('Conteúdo da nota')).toHaveValue('Olá mundo')
+  await expect(page.getByRole('textbox', { name: 'Conteúdo da nota' })).toHaveText('Olá mundo')
 
   await openTreeOnMobile(page, testInfo)
   await renamedItem.focus()
