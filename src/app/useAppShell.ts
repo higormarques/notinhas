@@ -25,8 +25,13 @@ export function useAppShell() {
     trigger('command-palette:open')
   }
 
+  function openDailyDesk() {
+    trigger('daily-desk:open')
+  }
+
   return {
     openCommandPalette,
+    openDailyDesk,
     breakpoint,
     theme,
     toggleTheme,

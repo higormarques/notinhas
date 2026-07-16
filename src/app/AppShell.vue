@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Menu, PanelRight, Moon, Search, Sun, TriangleAlert } from '@lucide/vue'
+import { CalendarDays, Menu, PanelRight, Moon, Search, Sun, TriangleAlert } from '@lucide/vue'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import {
@@ -15,6 +15,7 @@ import {
   SheetTitle,
 } from '@/shared/ui/sheet'
 import CommandPalette from '@/features/command-palette/CommandPalette.vue'
+import DailyDesk from '@/features/daily-desk/DailyDesk.vue'
 import FileTree from '@/features/file-tree/FileTree.vue'
 import NoteEditor from '@/features/note-editor/NoteEditor.vue'
 import WorkspaceConnect from '@/features/workspace-connect/WorkspaceConnect.vue'
@@ -33,6 +34,7 @@ const {
   isWorkspaceConnected,
   isOpfsFallback,
   openCommandPalette,
+  openDailyDesk,
 } = useAppShell()
 </script>
 
@@ -41,6 +43,7 @@ const {
 
   <div v-else class="flex h-svh w-full flex-col bg-background text-foreground">
     <CommandPalette />
+    <DailyDesk />
 
     <Alert v-if="isOpfsFallback" class="shrink-0 rounded-none border-x-0 border-t-0">
       <TriangleAlert class="size-4" />
@@ -90,6 +93,14 @@ const {
           @click="toggleRightPanel"
         >
           <PanelRight class="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Abrir Daily Desk"
+          @click="openDailyDesk"
+        >
+          <CalendarDays class="size-4" />
         </Button>
         <Button
           variant="ghost"

@@ -183,6 +183,36 @@ describe('useFileTree', () => {
     expect(result.rows.value).toEqual([])
   })
 
+  it('hides the Daily folder from the root listing', async () => {
+    await adapter.writeFile('bemvindo.md', 'ola')
+    await adapter.writeFile('Daily/2026-07-15.md', 'nota de hoje')
+
+    const result = mountComposable()
+    await flushPromises()
+
+    expect(result.rows.value).toEqual([
+      {
+        entry: { name: 'bemvindo.md', path: 'bemvindo.md', kind: 'file' },
+        depth: 0,
+        isExpanded: false,
+      },
+    ])
+  })
+
+  it('does not hide a nested folder that happens to be named Daily', async () => {
+    await adapter.createDirectory('Notas')
+    await adapter.writeFile('Notas/Daily/README.md', '')
+
+    const result = mountComposable()
+    await flushPromises()
+
+    result.focusedPath.value = 'Notas'
+    result.handleTreeKeydown({ key: 'ArrowRight', preventDefault: () => {} } as KeyboardEvent)
+    await flushPromises()
+
+    expect(result.rows.value.map((row) => row.entry.path)).toContain('Notas/Daily')
+  })
+
   it('moves keyboard focus between visible rows with arrow keys', async () => {
     await adapter.writeFile('a.md', '')
     await adapter.writeFile('b.md', '')

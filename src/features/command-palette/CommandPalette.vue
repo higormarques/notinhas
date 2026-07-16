@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Moon, Plus, Sun } from '@lucide/vue'
+import { CalendarDays, Moon, Plus, Sun } from '@lucide/vue'
 import { ListboxItem } from 'reka-ui'
 import {
   CommandDialog,
@@ -20,6 +20,10 @@ const {
   createLabel,
   selectNote,
   createNote,
+  showSmartDateOption,
+  smartDateLabel,
+  goToSmartDate,
+  openDailyDesk,
   runToggleTheme,
   theme,
 } = useCommandPalette()
@@ -66,13 +70,29 @@ const {
           <Plus />
           {{ createLabel }}
         </ListboxItem>
-        <CommandEmpty v-else>Nenhum resultado encontrado.</CommandEmpty>
+        <CommandEmpty v-else-if="!showSmartDateOption">Nenhum resultado encontrado.</CommandEmpty>
+
+        <!-- Mesmo motivo do item "Criar nota" acima: o rótulo muda a cada tecla digitada. -->
+        <ListboxItem
+          v-if="showSmartDateOption"
+          value="__smart-date__"
+          data-slot="command-item"
+          class="data-highlighted:bg-muted data-highlighted:text-foreground data-highlighted:*:[svg]:text-foreground relative m-1 flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
+          @select="goToSmartDate"
+        >
+          <CalendarDays />
+          {{ smartDateLabel }}
+        </ListboxItem>
 
         <CommandGroup heading="Aplicativo">
           <CommandItem value="alternar-tema" @select="runToggleTheme">
             <Sun v-if="theme === 'dark'" class="size-4" />
             <Moon v-else class="size-4" />
             {{ theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro' }}
+          </CommandItem>
+          <CommandItem value="ir-para-daily-desk" @select="openDailyDesk">
+            <CalendarDays class="size-4" />
+            Ir para Daily Desk
           </CommandItem>
         </CommandGroup>
       </CommandList>

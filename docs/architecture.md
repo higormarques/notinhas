@@ -56,9 +56,8 @@ injetado a partir de `shared/storage`.
 
 | Key                   | Uso                                    |
 | --------------------- | -------------------------------------- |
-| `['directory', path]` | listagem de uma pasta                  |
-| `['file', path]`      | conteúdo de um arquivo/nota            |
-| `['daily', date]`     | nota diária de uma data (`YYYY-MM-DD`) |
+| `['directory', path]` | listagem de uma pasta (inclui `['directory', 'Daily']`, usada pelo Daily Desk — Fase 5) |
+| `['file', path]`      | conteúdo de um arquivo/nota (inclui notas diárias, via `dailyNotePath(date)` — Fase 5) |
 | `['notes-index']`     | lista achatada e recursiva de todas as notas do workspace, usada pela paleta de comandos (Fase 3) para "ir para nota"/"nova nota" |
 
 Toda mutation que escreve/renomeia/apaga invalida a(s) query key(s) afetada(s). Refetch
@@ -69,6 +68,11 @@ Query) é o mecanismo que substitui a ausência de filesystem watch nativo — v
 raiz a cada abertura da paleta (`staleTime: 0`, habilitada só enquanto a paleta está aberta), sem
 cache incremental. Isso é aceitável para o volume de notas esperado até aqui; a Fase 6 substitui
 essa listagem por um índice real (título + conteúdo) atualizado incrementalmente a cada escrita.
+
+A chave `['daily', date]` cogitada antes da Fase 5 não foi implementada como chave separada: uma
+nota diária é só um arquivo em `Daily/YYYY-MM-DD.md`, então reaproveitar `['file', path]` (via
+`dailyNotePath(date)`) e `['directory', 'Daily']` (para saber quais dias têm nota) evita duplicar
+o mesmo dado sob duas chaves diferentes.
 
 ## Pinia stores
 
@@ -150,6 +154,40 @@ sempre responsabilidade do cache do TanStack Query.
     fonte do `content` ref agora é `editor.getMarkdown()` chamado em `onUpdate`; trocar de nota
     chama `setContent(data, { contentType: 'markdown', emitUpdate: false })` para não disparar
     autosave espúrio ao carregar.
+- `daily-desk` (`src/features/daily-desk/`, Fase 5) — Dialog acionado por `mod+j` (registrado em
+  `useShortcuts`) com um calendário para abrir/criar a nota diária de um dia:
+  - **Composição manual do calendário**: usa `CalendarRoot` (importado direto de `reka-ui`, mesmo
+    padrão do `Calendar.vue` gerado) e as peças já geradas em `shared/ui/calendar/`
+    (`CalendarGrid`/`CalendarCell`/`CalendarCellTrigger`/etc.), em vez do componente composto
+    `Calendar.vue` — este último não expõe slot por célula, e o Daily Desk precisa injetar um
+    indicador de "tem nota" e um `Tooltip` de preview em cada dia.
+  - **`prevent-deselect`**: sem essa prop, selecionar o dia já selecionado (tipicamente "hoje",
+    que começa pré-selecionado) dispara um deselect e emite `undefined` em vez do `DateValue` —
+    quebrava silenciosamente o fluxo mais comum (abrir a nota de hoje).
+  - `CalendarCellTrigger.vue` (`shared/ui/calendar/`) ganhou `defineSlots` tipado: o componente
+    gerado por `shadcn-vue add calendar` não tipava o scoped slot por célula que o primitivo Reka
+    UI subjacente já expõe (`dayValue`/`selected`/`today`/etc.), então usá-lo via
+    `#default="{ dayValue }"` falhava no `vue-tsc`. Edição mínima no componente gerado para expor
+    o que o primitivo já fornece, não uma reescrita.
+  - **Criação/migração compartilhada**: `openOrCreateDailyNote` (`dailyNoteWriter.ts`, módulo
+    plano, não composable) é usada tanto pelo Daily Desk quanto por "Ir para data" na paleta de
+    comandos, para não duplicar a lógica de migração. Só migra tarefas incompletas (`- [ ]`/
+    `* [ ]`, extraídas via regex sobre o markdown bruto em `entities/DailyNote.ts`, sem precisar
+    de uma instância do Tiptap) quando a data sendo criada é **hoje**; notas de outras datas são
+    criadas vazias.
+  - **Smart Dates**: `parseSmartDate` (`entities/DailyNote.ts`) usa `chrono-node` (import `pt` —
+    locale português, modo `casual`) para resolver "hoje"/"ontem"/"próxima sexta"/datas
+    explícitas. A paleta de comandos mostra "Ir para data" como um `ListboxItem` cru (mesmo motivo
+    de "Criar nota" — o rótulo muda a cada tecla digitada e o índice de busca do `Command` fica
+    uma tecla atrasado).
+  - **Invalidação de cache dupla**: criar a primeira nota diária também cria a pasta `Daily/` em
+    si; por isso a mutation de criação invalida `['directory', 'Daily']` **e**
+    `['directory', '']` — só a segunda faz a árvore de arquivos descobrir a pasta nova.
+  - **Pasta `Daily/` escondida da árvore de arquivos**: `useFileTree.ts` filtra a entrada `Daily`
+    (constante `DAILY_DIRECTORY` de `entities/DailyNote.ts`) fora da listagem raiz — a navegação
+    por notas diárias é feita pelo Daily Desk e pela paleta ("ir para data"), não pela árvore. O
+    filtro é local à listagem raiz (não afeta uma subpasta aninhada chamada "Daily" nem outros
+    consumidores de `['directory', path]`, como o `notes-index` da paleta).
 
 ## Testes
 

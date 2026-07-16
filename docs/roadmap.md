@@ -211,16 +211,63 @@ Tiptap 3.7.0 — ver decisão abaixo).
 _Pronto quando:_ nota com headings/listas/code/tabela é escrita inteiramente por teclado; reload
 confirma fidelidade do round-trip markdown; check responsivo mobile.
 
-## Fase 5 — Daily Desk — ⬜ não iniciada
+## Fase 5 — Daily Desk — ✅ concluída
 
-Calendar (shadcn-vue) como superfície de navegação. Convenção `Daily/YYYY-MM-DD.md` com criação
-automática ao navegar. Indicador visual de dias com nota + preview no hover/foco. Smart Dates no
-palette via parser leve (ex: chrono-node). Contador de tarefas por nota diária + migração de
-tarefas incompletas. Inclui as entradas "ir para data" e "ir para daily desk" na paleta de
+Calendar (shadcn-vue/Reka UI) como superfície de navegação. Convenção `Daily/YYYY-MM-DD.md` com
+criação automática ao navegar. Indicador visual de dias com nota + preview no hover/foco. Smart
+Dates no palette via `chrono-node` (locale `pt`). Contador de tarefas por nota diária + migração
+de tarefas incompletas. Inclui as entradas "ir para data" e "ir para daily desk" na paleta de
 comandos (adiadas da Fase 3 por dependerem deste parser e desta convenção de arquivo).
 
+- [x] `src/entities/DailyNote.ts` — funções puras de domínio: `dailyNotePath`/
+      `dateFromDailyNoteFilename` (convenção `Daily/YYYY-MM-DD.md`), `formatIsoDate`,
+      `mostRecentDateBefore`, `extractIncompleteTaskLines`/`countIncompleteTasks`/
+      `removeIncompleteTaskLines` (parsing leve de `- [ ]`/`* [ ]` via regex sobre o markdown
+      bruto, sem precisar instanciar um editor Tiptap), `buildMigratedNoteContent` e
+      `parseSmartDate` (wrapper de `chrono-node`, locale `pt`, modo casual) — todas testadas em
+      `DailyNote.test.ts` sem depender do `StorageAdapter`
+- [x] `chrono-node` adicionado como dependência para o parser de Smart Dates ("hoje", "ontem",
+      "próxima sexta", datas explícitas como `20/07/2026`) — locale `pt` escolhida por ser um app
+      em português; decisão já estava pré-sancionada pelo próprio roadmap ("ex: chrono-node"), sem
+      necessidade de ADR novo
+- [x] `src/features/daily-desk/dailyNoteWriter.ts` — `listDailyDates`/`openOrCreateDailyNote`
+      (não-composable, módulo plano) compartilhado entre `daily-desk` e `command-palette` para não
+      duplicar a lógica de criação/migração; `openOrCreateDailyNote` só migra tarefas incompletas
+      da nota diária anterior mais recente quando a data sendo criada é **hoje** — notas de
+      outras datas são criadas vazias
+- [x] Feature `daily-desk` (`DailyDesk.vue` + `useDailyDesk.ts`) — Dialog com um `CalendarRoot`
+      (Reka UI, composto diretamente a partir das peças já geradas em `shared/ui/calendar/` — não
+      o componente `Calendar.vue` completo, que não expõe slot por célula) com `prevent-deselect`
+      (selecionar o dia já selecionado — tipicamente "hoje" — não pode virar um deselect que
+      emite `undefined`), indicador (`data-selected`/ponto) para dias com nota via
+      `['directory', 'Daily']`, preview em `Tooltip` no hover/foco (conteúdo via `['file', path]`
+      sob demanda, só para a data focada) mostrando contagem de tarefas pendentes
+- [x] `src/shared/ui/calendar/CalendarCellTrigger.vue` ganhou `defineSlots` tipado (faltava no
+      componente gerado pelo `shadcn-vue add calendar`, apesar do primitivo Reka UI subjacente já
+      expor esse scoped slot) — edição mínima e necessária no componente gerado, não uma reescrita
+- [x] Atalho global `mod+j` (`daily-desk:open`) registrado via `useShortcuts`, mais botão
+      "Abrir Daily Desk" no header do `AppShell`
+- [x] `useCommandPalette.ts`: entradas "Ir para data" (aparece só quando o texto digitado resolve
+      via `parseSmartDate`; mesmo padrão de `ListboxItem` cru já usado por "Criar nota", pelo
+      mesmo motivo — rótulo muda a cada tecla) e "Ir para Daily Desk" (aciona
+      `trigger('daily-desk:open')`) — ordem dos itens do grupo "Aplicativo" importa: "Alternar
+      tema" continua primeiro para não quebrar o destaque padrão por teclado do item já existente
+- [x] Mutations de criação de nota diária (`daily-desk` e `command-palette`) invalidam tanto
+      `['directory', 'Daily']` quanto `['directory', '']` — a primeira nota diária criada também
+      cria a pasta `Daily/` em si, que a árvore de arquivos só descobre reconsultando a raiz
+- [x] Pasta `Daily/` escondida da árvore de arquivos (`useFileTree.ts` filtra a entrada na
+      listagem raiz) — a navegação por notas diárias é feita pelo Daily Desk e pela paleta, não
+      pela árvore; testado em `useFileTree.test.ts` e em `e2e/daily-desk.spec.ts`
+- [x] `e2e/daily-desk.spec.ts` — cria/abre a nota de hoje, navega 30 dias só com `ArrowRight` +
+      `Enter`, abre nota existente sem sobrescrevê-la, migração de tarefas ponta a ponta
+      (verifica tanto a nota de hoje quanto a nota antiga), alcançável via atalho e via botão do
+      header, fecha com Escape, checagem `@axe-core/playwright` — tudo via `page.keyboard.press`,
+      nos 3 breakpoints; usa `page.clock.setFixedTime` para fixar "hoje" de forma determinística
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` passando (73 testes unitários,
+      75 testes e2e)
+
 _Pronto quando:_ navegar 30 dias só por teclado; nomes de arquivo no disco batem com a
-convenção; teste de migração move um item não marcado de um dia antigo para o dia atual.
+convenção; teste de migração move um item não marcado de um dia antigo para o dia atual. ✅
 
 ## Fase 6 — Busca full-text — ⬜ não iniciada
 

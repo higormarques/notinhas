@@ -157,4 +157,40 @@ describe('useCommandPalette', () => {
 
     result.runToggleTheme()
   })
+
+  it('offers a smart date option when the query resolves to a date', async () => {
+    const result = mountComposable()
+    result.open()
+    await flushPromises()
+
+    result.handleQueryInput(inputEvent('2026-07-20'))
+    expect(result.showSmartDateOption.value).toBe(true)
+    expect(result.smartDateLabel.value).toBe('Ir para 2026-07-20')
+
+    result.handleQueryInput(inputEvent('Ideia nova'))
+    expect(result.showSmartDateOption.value).toBe(false)
+  })
+
+  it('goes to a smart date, creating the daily note and closing the palette', async () => {
+    const result = mountComposable()
+    result.open()
+    await flushPromises()
+
+    result.handleQueryInput(inputEvent('2026-07-20'))
+    await result.goToSmartDate()
+    await flushPromises()
+
+    expect(adapter.writeFile).toHaveBeenCalledWith('Daily/2026-07-20.md', '')
+    expect(useNotesStore().activeNotePath).toBe('Daily/2026-07-20.md')
+    expect(result.isOpen.value).toBe(false)
+  })
+
+  it('closes the palette when jumping to the Daily Desk', () => {
+    const result = mountComposable()
+    result.open()
+
+    result.openDailyDesk()
+
+    expect(result.isOpen.value).toBe(false)
+  })
 })

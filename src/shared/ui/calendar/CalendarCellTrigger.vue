@@ -10,6 +10,18 @@ const props = withDefaults(defineProps<CalendarCellTriggerProps & { class?: HTML
   as: 'button',
 })
 
+defineSlots<{
+  default?: (props: {
+    dayValue: string
+    disabled: boolean
+    selected: boolean
+    today: boolean
+    outsideView: boolean
+    outsideVisibleView: boolean
+    unavailable: boolean
+  }) => unknown
+}>()
+
 const delegatedProps = reactiveOmit(props, 'class')
 
 const forwardedProps = useForwardProps(delegatedProps)
@@ -17,6 +29,7 @@ const forwardedProps = useForwardProps(delegatedProps)
 
 <template>
   <CalendarCellTrigger
+    v-slot="slotProps"
     data-slot="calendar-cell-trigger"
     :class="cn(
       buttonVariants({ variant: 'ghost' }),
@@ -34,6 +47,6 @@ const forwardedProps = useForwardProps(delegatedProps)
     )"
     v-bind="forwardedProps"
   >
-    <slot />
+    <slot v-bind="slotProps">{{ slotProps.dayValue }}</slot>
   </CalendarCellTrigger>
 </template>

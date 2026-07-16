@@ -19,7 +19,8 @@ paleta de comandos, busca, tags/links. Análise completa das features originais 
 - Pinia 4 — estado de UI/cliente
 - `@tanstack/vue-query` 5 — camada assíncrona sobre o filesystem local
 - shadcn-vue (sobre Reka UI 2) + Tailwind CSS 4 — componentes gerados via CLI
-- Tiptap (ProseMirror) + extensão markdown — entra na Fase 4, ainda não instalado
+- Tiptap 3 (ProseMirror) + `@tiptap/markdown` — editor WYSIWYG (Fase 4)
+- `chrono-node` (locale `pt`) — parser de Smart Dates da paleta de comandos (Fase 5)
 - vue-router 5, pnpm, ESLint (flat config) + Prettier, Vitest + @vue/test-utils,
   Playwright + `@axe-core/playwright`
 
@@ -44,9 +45,10 @@ ser considerada concluída.
 ```
 src/
   app/            # shell (AppShell.vue), router, providers (Pinia, VueQuery montados em main.ts)
-  entities/       # tipos de domínio: Workspace (Fase 1). DailyNote/Tag chegam nas fases
-                  # 5/7 — árvore/CRUD de nota (Fase 2) usa DirectoryEntry do StorageAdapter,
-                  # não precisou de um tipo Note dedicado
+  entities/       # tipos/funções de domínio: Workspace (Fase 1), DailyNote (Fase 5 — path,
+                  # parsing, migração de tarefas, Smart Dates). Tag chega na Fase 7 —
+                  # árvore/CRUD de nota (Fase 2) usa DirectoryEntry do StorageAdapter, não
+                  # precisou de um tipo Note dedicado
   features/       # workspace-connect, file-tree, note-editor, command-palette,
                   # daily-desk, search, tags-links, settings
                   # cada feature: ComponentName.vue + useComponentName.ts colocados
@@ -119,6 +121,11 @@ completo em `docs/architecture.md`.
 - [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` passam.
 - [ ] Nenhuma violação crítica no `@axe-core/playwright`.
 - [ ] Nenhuma lógica de negócio dentro de um `.vue` (ver regra acima).
+- [ ] **Não fazer verificação manual num navegador real** (não abrir `pnpm dev` num browser nem
+      usar ferramentas de automação de browser para "conferir visualmente"). A cobertura de
+      teclado/responsividade/acessibilidade é inteiramente via Vitest + Playwright automatizado
+      (mockando `showDirectoryPicker` como já é feito em `e2e/mockWorkspace.ts`) — isso já é
+      suficiente para considerar uma fase pronta.
 
 ## Fora de escopo agora — não adiantar trabalho
 

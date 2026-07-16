@@ -4,6 +4,8 @@ import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
 import { useShortcuts } from '@/shared/composables/useShortcuts'
 import { useTheme } from '@/shared/composables/useTheme'
 import { useNotesStore } from '@/shared/stores/notes'
+import { parseSmartDate } from '@/entities/DailyNote'
+import { DAILY_DIRECTORY, openOrCreateDailyNote } from '@/features/daily-desk/dailyNoteWriter'
 
 interface NoteOption {
   path: string
@@ -32,7 +34,7 @@ export function useCommandPalette() {
   const notesStore = useNotesStore()
   const queryClient = useQueryClient()
   const { theme, toggleTheme } = useTheme()
-  const { register } = useShortcuts()
+  const { register, trigger } = useShortcuts()
 
   const isOpen = ref(false)
   const query = ref('')
@@ -71,6 +73,23 @@ export function useCommandPalette() {
       !notesQuery.isLoading.value,
   )
   const createLabel = computed(() => `Criar nota "${trimmedQuery.value}"`)
+
+  const smartDate = computed(() => parseSmartDate(trimmedQuery.value))
+  const showSmartDateOption = computed(() => smartDate.value !== null)
+  const smartDateLabel = computed(() => `Ir para ${smartDate.value}`)
+
+  const dailyNoteMutation = useMutation({
+    mutationFn: openOrCreateDailyNote,
+    onSuccess: async (path) => {
+      // A raiz também precisa ser invalidada: a primeira nota diária criada cria a pasta
+      // `Daily/` em si, que a árvore de arquivos só descobre reconsultando a listagem raiz.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['directory', DAILY_DIRECTORY] }),
+        queryClient.invalidateQueries({ queryKey: ['directory', ''] }),
+      ])
+      notesStore.openNote(path)
+    },
+  })
 
   function open() {
     isOpen.value = true
@@ -111,6 +130,18 @@ export function useCommandPalette() {
     close()
   }
 
+  async function goToSmartDate() {
+    const date = smartDate.value
+    if (!date) return
+    await dailyNoteMutation.mutateAsync(date)
+    close()
+  }
+
+  function openDailyDesk() {
+    close()
+    trigger('daily-desk:open')
+  }
+
   return {
     isOpen,
     open,
@@ -121,6 +152,10 @@ export function useCommandPalette() {
     createLabel,
     selectNote,
     createNote,
+    showSmartDateOption,
+    smartDateLabel,
+    goToSmartDate,
+    openDailyDesk,
     runToggleTheme,
     theme,
   }

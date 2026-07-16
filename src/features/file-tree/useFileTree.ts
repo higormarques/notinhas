@@ -4,6 +4,7 @@ import { useMutation, useQueries, useQueryClient } from '@tanstack/vue-query'
 import type { DirectoryEntry } from '@/shared/storage/StorageAdapter'
 import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
 import { useNotesStore } from '@/shared/stores/notes'
+import { DAILY_DIRECTORY } from '@/entities/DailyNote'
 
 export interface FileTreeRow {
   entry: DirectoryEntry
@@ -64,10 +65,21 @@ export function useFileTree() {
       })),
   })
 
+  function isHiddenRootEntry(path: string, entry: DirectoryEntry): boolean {
+    // A pasta Daily/ é navegada pelo Daily Desk e pela paleta de comandos ("ir para data"), não
+    // pela árvore de arquivos — escondida aqui em vez de filtrada no StorageAdapter para não
+    // afetar outros consumidores da mesma listagem (ex.: notes-index da paleta).
+    return path === '' && entry.kind === 'directory' && entry.name === DAILY_DIRECTORY
+  }
+
   const entriesByPath = computed(() => {
     const map = new Map<string, DirectoryEntry[]>()
     directoryPaths.value.forEach((path, index) => {
-      map.set(path, directoryQueries.value[index]?.data ?? [])
+      const entries = directoryQueries.value[index]?.data ?? []
+      map.set(
+        path,
+        entries.filter((entry) => !isHiddenRootEntry(path, entry)),
+      )
     })
     return map
   })
