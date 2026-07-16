@@ -141,10 +141,10 @@ para data"/"ir para daily desk" dependem do parser de datas e da convenção
 com a própria Fase 5. "Lista de atalhos documentada em Settings" é adicionada junto com a tela
 de Settings na Fase 8, consumindo o registro `useShortcuts` já pronto desde esta fase.
 
-- [x] `useShortcuts` (`shared/composables/useShortcuts.ts`) — registro global `id → {keys,
-      description, handler}`, um único listener de `keydown` em `window` anexado lazily,
-      `trigger(id)` para acionar programaticamente o mesmo handler de um atalho (usado pelo
-      botão de busca do header), com teste unitário
+- [x] `useShortcuts` (`shared/composables/useShortcuts.ts`) — registro global
+      `id → {keys, description, handler}`, um único listener de `keydown` em `window`
+      anexado lazily, `trigger(id)` para acionar programaticamente o mesmo handler de um
+      atalho (usado pelo botão de busca do header), com teste unitário
 - [x] Feature `command-palette` (`CommandPalette.vue` + `useCommandPalette.ts`) — paleta
       Cmd/Ctrl+K via `CommandDialog` do shadcn-vue: "Ir para nota" (busca sobre nova query key
       `['notes-index']`, listagem recursiva via `StorageAdapter`), "Nova nota" (só aparece
@@ -184,29 +184,26 @@ Tiptap 3.7.0 — ver decisão abaixo).
       (`lowlight` + bundle `common` de linguagens) substituindo o `codeBlock` padrão do
       StarterKit, `TaskList`/`TaskItem` de `@tiptap/extension-list`, `TableKit` de
       `@tiptap/extension-table` (não resizable), extensão `Markdown` oficial e a extensão
-      própria `FindInNote`
-      - `Markdown` official extension escolhida em vez de `tiptap-markdown`: o próprio README do
-        pacote comunitário recomenda migrar para a extensão oficial a partir da 3.7.0; ela já
-        cobre round-trip de headings/listas/task lists/tabelas/code block nativamente (tabelas e
-        listas declaram `parseMarkdown`/`renderMarkdown` diretamente nos pacotes
-        `@tiptap/extension-table` e `@tiptap/extension-list`)
-      - Autosave: `onUpdate` chama `editor.getMarkdown()` para o `content` ref; troca de nota usa
-        `setContent(data, { contentType: 'markdown', emitUpdate: false })` para não disparar
-        autosave espúrio ao carregar. **Revisado depois da Fase 6** (fora de qualquer fase
-        formal, correção de bug reportada em uso real): o mecanismo original com
-        `watchDebounced(content, ...)` (mesmo padrão da Fase 2) lia `activeNotePath.value` só na
-        hora em que o callback debounced disparava, então trocar de nota antes dos 300ms de
-        debounce podia gravar a edição da nota antiga no arquivo da nota nova, ou mostrar o
-        conteúdo antigo na tela enquanto a nota nova carregava. Substituído por
-        `scheduleAutosave`/`flushAutosave` (`setTimeout` manual em `useNoteEditor.ts`) que
-        capturam path/conteúdo no momento da edição, mais um `watch(activeNotePath, ...)` que dá
-        flush imediato do autosave pendente e limpa o editor na troca — ver
-        `docs/architecture.md` para o detalhe completo. Testes de regressão em
-        `useNoteEditor.test.ts` e `e2e/note-editor.spec.ts`
-      - Estados ativos de toolbar (negrito/heading/lista ativa, canUndo/canRedo) e o contador de
-        resultados de busca são `computed` que dependem de um `updateTick` incrementado em
-        `onTransaction` — necessário porque `useEditor()` do `@tiptap/vue-3` v3 não força
-        reatividade automática do Vue a cada transação da doc (diferente do comportamento da v2)
+      própria `FindInNote` - `Markdown` official extension escolhida em vez de `tiptap-markdown`: o próprio README do
+      pacote comunitário recomenda migrar para a extensão oficial a partir da 3.7.0; ela já
+      cobre round-trip de headings/listas/task lists/tabelas/code block nativamente (tabelas e
+      listas declaram `parseMarkdown`/`renderMarkdown` diretamente nos pacotes
+      `@tiptap/extension-table` e `@tiptap/extension-list`) - Autosave: `onUpdate` chama `editor.getMarkdown()` para o `content` ref; troca de nota usa
+      `setContent(data, { contentType: 'markdown', emitUpdate: false })` para não disparar
+      autosave espúrio ao carregar. **Revisado depois da Fase 6** (fora de qualquer fase
+      formal, correção de bug reportada em uso real): o mecanismo original com
+      `watchDebounced(content, ...)` (mesmo padrão da Fase 2) lia `activeNotePath.value` só na
+      hora em que o callback debounced disparava, então trocar de nota antes dos 300ms de
+      debounce podia gravar a edição da nota antiga no arquivo da nota nova, ou mostrar o
+      conteúdo antigo na tela enquanto a nota nova carregava. Substituído por
+      `scheduleAutosave`/`flushAutosave` (`setTimeout` manual em `useNoteEditor.ts`) que
+      capturam path/conteúdo no momento da edição, mais um `watch(activeNotePath, ...)` que dá
+      flush imediato do autosave pendente e limpa o editor na troca — ver
+      `docs/architecture.md` para o detalhe completo. Testes de regressão em
+      `useNoteEditor.test.ts` e `e2e/note-editor.spec.ts` - Estados ativos de toolbar (negrito/heading/lista ativa, canUndo/canRedo) e o contador de
+      resultados de busca são `computed` que dependem de um `updateTick` incrementado em
+      `onTransaction` — necessário porque `useEditor()` do `@tiptap/vue-3` v3 não força
+      reatividade automática do Vue a cada transação da doc (diferente do comportamento da v2)
 - [x] Extensão própria `findInNoteExtension.ts` (`FindInNote`) para "buscar dentro da nota"
       (Cmd/Ctrl+F): plugin ProseMirror com `Decoration.inline` para destacar ocorrências +
       comandos `setSearchTerm`/`goToSearchResult`/`clearSearchTerm`. Escrita à mão em vez de um
@@ -216,14 +213,12 @@ Tiptap 3.7.0 — ver decisão abaixo).
 - [x] `NoteEditor.vue` reescrito: toolbar (undo/redo, H1–H3, negrito/itálico/tachado/código,
       citação, listas com marcadores/numerada/tarefas, bloco de código, inserir tabela, busca)
       com `Toggle`/`Button` do shadcn-vue — todos operáveis por teclado nativamente — e barra de
-      busca com contador de resultados e navegação anterior/próximo
-      - Componentes `toggle`/`toggle-group` adicionados via CLI do shadcn-vue (não existiam
-        ainda) para os botões de estado ativo da toolbar
-      - CSS do conteúdo do editor (`.note-editor-content`) em bloco `<style>` global do
-        componente, usando as CSS custom properties de tema já definidas em `style.css`
-        (`var(--border)`, `var(--muted)` etc.) — necessário porque o Tiptap renderiza elementos
-        HTML brutos (`h1`, `ul`, `pre`, `table`) que não podem receber classes Tailwind via
-        template
+      busca com contador de resultados e navegação anterior/próximo - Componentes `toggle`/`toggle-group` adicionados via CLI do shadcn-vue (não existiam
+      ainda) para os botões de estado ativo da toolbar - CSS do conteúdo do editor (`.note-editor-content`) em bloco `<style>` global do
+      componente, usando as CSS custom properties de tema já definidas em `style.css`
+      (`var(--border)`, `var(--muted)` etc.) — necessário porque o Tiptap renderiza elementos
+      HTML brutos (`h1`, `ul`, `pre`, `table`) que não podem receber classes Tailwind via
+      template
 - [x] Teste unitário (`useNoteEditor.test.ts`) cobrindo: estado vazio, carregamento como
       markdown, autosave serializado de volta para markdown, round-trip de headings/listas,
       não-reescrita de conteúdo inalterado, busca (contagem/ciclo de resultados), limpeza da
@@ -455,6 +450,13 @@ do MVP já entregue — não consta no `PLANO.md` original, documentada em ADR 0
   e somente leitura (`useNoteEditor.ts`: `editable: false` via `watchEffect` + toolbar escondida
   em `NoteEditor.vue` + autosave desativado especificamente pra esse path, já que comandos
   programáticos ainda conseguem mutar um editor Tiptap não-editável).
+- Deploy no GitHub Pages: job `deploy` novo em `.github/workflows/ci.yml`, publicando `dist/` como
+  Pages de projeto (`https://<user>.github.io/notinhas/`) depois que `lint-typecheck-test` e `e2e`
+  passam, só em push direto pra `main` (nunca em PR). `vite.config.ts` ganhou
+  `base: process.env.VITE_BASE_PATH ?? '/'` — só o job de deploy define essa env var; `pnpm dev`/
+  `pnpm build`/`pnpm preview` locais continuam servindo da raiz. Passo manual único e obrigatório,
+  fora do alcance do workflow: habilitar "Settings → Pages → Source: GitHub Actions" no
+  repositório.
 
 ## Fase 8 — Polimento MVP e checklist de release — ⬜ não iniciada
 
