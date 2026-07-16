@@ -193,4 +193,13 @@ describe('useCommandPalette', () => {
 
     expect(result.isOpen.value).toBe(false)
   })
+
+  it('closes the palette when jumping to search', () => {
+    const result = mountComposable()
+    result.open()
+
+    result.openSearch()
+
+    expect(result.isOpen.value).toBe(false)
+  })
 })

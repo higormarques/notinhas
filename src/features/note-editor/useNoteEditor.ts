@@ -1,7 +1,6 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { watchDebounced } from '@vueuse/core'
 import { useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
@@ -16,7 +15,7 @@ import { FindInNote } from './findInNoteExtension'
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
-const AUTOSAVE_DEBOUNCE_MS = 600
+const AUTOSAVE_DEBOUNCE_MS = 300
 const FIND_SHORTCUT_ID = 'note-editor:find'
 const HEADING_LEVELS = [1, 2, 3] as const
 const lowlight = createLowlight(common)
@@ -32,7 +31,9 @@ export function useNoteEditor() {
   const isFindOpen = ref(false)
   const findQuery = ref('')
   let lastSavedContent = ''
+  let lastSavedPath: string | null = null
   let suppressAutosave = false
+  let autosaveTimer: ReturnType<typeof setTimeout> | null = null
 
   const fileQuery = useQuery({
     queryKey: computed(() => ['file', activeNotePath.value] as const),
@@ -48,6 +49,40 @@ export function useNoteEditor() {
     mutationFn: (vars: { path: string; content: string }) =>
       getStorageAdapter().writeFile(vars.path, vars.content),
   })
+
+  function clearAutosaveTimer(): void {
+    if (autosaveTimer !== null) {
+      clearTimeout(autosaveTimer)
+      autosaveTimer = null
+    }
+  }
+
+  /** Salva imediatamente, sempre para o `path`/`value` recebidos como parâmetro — nunca lidos de
+   * `activeNotePath`/`content` no momento em que a função roda. Chamada tanto pelo timer de
+   * debounce quanto ao trocar de nota (`watch(activeNotePath, ...)` abaixo), justamente para não
+   * reintroduzir o bug que motivou esse desenho: ler `activeNotePath.value` só na hora de
+   * escrever permitia que uma edição pendente da nota A fosse gravada no arquivo da nota B se o
+   * usuário trocasse de nota antes do debounce dessa edição disparar. */
+  async function flushAutosave(path: string, value: string): Promise<void> {
+    clearAutosaveTimer()
+    if (value === lastSavedContent && path === lastSavedPath) return
+    saveStatus.value = 'saving'
+    try {
+      await saveMutation.mutateAsync({ path, content: value })
+      lastSavedContent = value
+      lastSavedPath = path
+      saveStatus.value = 'saved'
+    } catch {
+      saveStatus.value = 'error'
+    }
+  }
+
+  function scheduleAutosave(path: string, value: string): void {
+    clearAutosaveTimer()
+    autosaveTimer = setTimeout(() => {
+      void flushAutosave(path, value)
+    }, AUTOSAVE_DEBOUNCE_MS)
+  }
 
   const editor = useEditor({
     extensions: [
@@ -70,11 +105,30 @@ export function useNoteEditor() {
     },
     onUpdate: ({ editor: instance }) => {
       if (suppressAutosave) return
-      content.value = instance.getMarkdown()
+      const path = activeNotePath.value
+      const value = instance.getMarkdown()
+      content.value = value
+      if (path) scheduleAutosave(path, value)
     },
     onTransaction: () => {
       updateTick.value += 1
     },
+  })
+
+  // Troca de nota: dispara qualquer autosave pendente imediatamente (para o path antigo, nunca
+  // esperando o debounce natural, que já poderia estar rodando com o path novo por engano) e
+  // limpa o editor na hora — sem isso, o conteúdo da nota anterior continua na tela até o
+  // `fileQuery` da nota nova resolver, mesmo já tendo "trocado" de nota.
+  watch(activeNotePath, (newPath, oldPath) => {
+    if (oldPath && autosaveTimer !== null) {
+      void flushAutosave(oldPath, content.value)
+    }
+    if (newPath !== oldPath) {
+      suppressAutosave = true
+      editor.value?.commands.setContent('', { emitUpdate: false })
+      suppressAutosave = false
+      content.value = ''
+    }
   })
 
   watch(
@@ -86,26 +140,10 @@ export function useNoteEditor() {
       suppressAutosave = false
       content.value = data
       lastSavedContent = data
+      lastSavedPath = activeNotePath.value
       saveStatus.value = 'idle'
     },
     { immediate: true },
-  )
-
-  watchDebounced(
-    content,
-    async (value) => {
-      const path = activeNotePath.value
-      if (!path || value === lastSavedContent) return
-      saveStatus.value = 'saving'
-      try {
-        await saveMutation.mutateAsync({ path, content: value })
-        lastSavedContent = value
-        saveStatus.value = 'saved'
-      } catch {
-        saveStatus.value = 'error'
-      }
-    },
-    { debounce: AUTOSAVE_DEBOUNCE_MS },
   )
 
   function isActive(name: string, attrs?: Record<string, unknown>): boolean {
@@ -216,6 +254,12 @@ export function useNoteEditor() {
 
   onBeforeUnmount(() => {
     unregister(FIND_SHORTCUT_ID)
+    const path = activeNotePath.value
+    if (path && autosaveTimer !== null) {
+      void flushAutosave(path, content.value)
+    } else {
+      clearAutosaveTimer()
+    }
   })
 
   const noteName = computed(() => activeNotePath.value?.split('/').pop() ?? '')

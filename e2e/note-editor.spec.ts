@@ -14,9 +14,28 @@ async function closeTreeOnMobile(page: Page, testInfo: TestInfo) {
   await page.keyboard.press('Escape')
 }
 
+/** A árvore de arquivos guarda o item "roving tabindex" ativo em `focusedPath` (estado do
+ * composable), não em `document.activeElement` — chamar `.focus()` direto num treeitem
+ * arbitrário move o foco do DOM mas não sincroniza `focusedPath`, então `Enter` reativaria o
+ * item antigo. Foca o item com `tabindex="0"` (o item "roving" atual) e navega com
+ * `ArrowUp`/`ArrowDown` até alcançar o alvo (na direção certa, já que o alvo pode estar antes ou
+ * depois do item atual na lista), do mesmo jeito que um usuário real navegaria só de teclado.
+ * Assume que `name` é um arquivo na raiz do workspace (sem pasta), única forma usada neste
+ * arquivo de teste — `data-tree-path` de um item na raiz é igual ao seu nome. */
 async function openNote(page: Page, testInfo: TestInfo, name: string) {
   await openTreeOnMobile(page, testInfo)
-  await page.getByRole('treeitem', { name, exact: true }).focus()
+  await page.locator('[role="treeitem"][tabindex="0"]').focus()
+  for (let i = 0; i < 30; i += 1) {
+    const { currentIndex, targetIndex } = await page.evaluate((targetPath) => {
+      const items = Array.from(document.querySelectorAll('[role="treeitem"]'))
+      return {
+        currentIndex: items.indexOf(document.activeElement as Element),
+        targetIndex: items.findIndex((el) => el.getAttribute('data-tree-path') === targetPath),
+      }
+    }, name)
+    if (currentIndex === targetIndex) break
+    await page.keyboard.press(targetIndex > currentIndex ? 'ArrowDown' : 'ArrowUp')
+  }
   await page.keyboard.press('Enter')
   await closeTreeOnMobile(page, testInfo)
 }
@@ -68,6 +87,57 @@ test('formats a note with heading, lists, code block and table entirely via keyb
   await expect(reopenedContent.getByRole('listitem').filter({ hasText: 'item dois' })).toBeVisible()
   await expect(reopenedContent.locator('pre code')).toContainText('const x = 1')
   await expect(reopenedContent.locator('table td, table th')).toHaveCount(9)
+})
+
+test('switching notes mid-edit shows only the newly opened note\'s content and saves the pending edit to its own file', async ({
+  page,
+}, testInfo) => {
+  await connectMockWorkspace(page, 'meu-workspace', {
+    'a.md': '',
+    'b.md': 'conteúdo original de B',
+  })
+
+  await openNote(page, testInfo, 'a.md')
+  const editorContent = page.getByRole('textbox', { name: 'Conteúdo da nota' })
+  await editorContent.waitFor()
+  await editorContent.focus()
+  await page.keyboard.type('editado em A')
+
+  // troca para outra nota da árvore sem esperar o autosave (nem o indicador "Salvo") terminar
+  await openNote(page, testInfo, 'b.md')
+
+  await expect(editorContent).toHaveText('conteúdo original de B')
+
+  await expect(page.getByText('Salvo')).toBeVisible({ timeout: 3000 })
+  await openNote(page, testInfo, 'a.md')
+  await expect(editorContent).toHaveText('editado em A')
+
+  await openNote(page, testInfo, 'b.md')
+  await expect(editorContent).toHaveText('conteúdo original de B')
+})
+
+test('switching to the Daily Desk mid-edit shows only the daily note\'s content and saves the pending edit to its own file', async ({
+  page,
+}, testInfo) => {
+  await connectMockWorkspace(page, 'meu-workspace', { 'a.md': '' })
+  await page.clock.setFixedTime(new Date(2026, 6, 15, 12, 0, 0))
+
+  await openNote(page, testInfo, 'a.md')
+  const editorContent = page.getByRole('textbox', { name: 'Conteúdo da nota' })
+  await editorContent.waitFor()
+  await editorContent.focus()
+  await page.keyboard.type('editado em A')
+
+  await page.keyboard.press('Control+j')
+  await page.getByRole('button', { name: /15 de julho de 2026/ }).focus()
+  await page.keyboard.press('Enter')
+
+  await expect(page.getByRole('heading', { name: '2026-07-15.md', level: 2 })).toBeVisible()
+  await expect(editorContent).toHaveText('')
+
+  await expect(page.getByText('Salvo')).toBeVisible({ timeout: 3000 })
+  await openNote(page, testInfo, 'a.md')
+  await expect(editorContent).toHaveText('editado em A')
 })
 
 test('finds and cycles through matches inside a note, keyboard only', async ({

@@ -164,10 +164,19 @@ Tiptap 3.7.0 — ver decisão abaixo).
         cobre round-trip de headings/listas/task lists/tabelas/code block nativamente (tabelas e
         listas declaram `parseMarkdown`/`renderMarkdown` diretamente nos pacotes
         `@tiptap/extension-table` e `@tiptap/extension-list`)
-      - Autosave: `onUpdate` chama `editor.getMarkdown()` para o `content` ref, que segue o mesmo
-        padrão `watchDebounced` + `lastSavedContent` da Fase 2; troca de nota usa
+      - Autosave: `onUpdate` chama `editor.getMarkdown()` para o `content` ref; troca de nota usa
         `setContent(data, { contentType: 'markdown', emitUpdate: false })` para não disparar
-        autosave espúrio ao carregar
+        autosave espúrio ao carregar. **Revisado depois da Fase 6** (fora de qualquer fase
+        formal, correção de bug reportada em uso real): o mecanismo original com
+        `watchDebounced(content, ...)` (mesmo padrão da Fase 2) lia `activeNotePath.value` só na
+        hora em que o callback debounced disparava, então trocar de nota antes dos 300ms de
+        debounce podia gravar a edição da nota antiga no arquivo da nota nova, ou mostrar o
+        conteúdo antigo na tela enquanto a nota nova carregava. Substituído por
+        `scheduleAutosave`/`flushAutosave` (`setTimeout` manual em `useNoteEditor.ts`) que
+        capturam path/conteúdo no momento da edição, mais um `watch(activeNotePath, ...)` que dá
+        flush imediato do autosave pendente e limpa o editor na troca — ver
+        `docs/architecture.md` para o detalhe completo. Testes de regressão em
+        `useNoteEditor.test.ts` e `e2e/note-editor.spec.ts`
       - Estados ativos de toolbar (negrito/heading/lista ativa, canUndo/canRedo) e o contador de
         resultados de busca são `computed` que dependem de um `updateTick` incrementado em
         `onTransaction` — necessário porque `useEditor()` do `@tiptap/vue-3` v3 não força
@@ -269,14 +278,59 @@ comandos (adiadas da Fase 3 por dependerem deste parser e desta convenção de a
 _Pronto quando:_ navegar 30 dias só por teclado; nomes de arquivo no disco batem com a
 convenção; teste de migração move um item não marcado de um dia antigo para o dia atual. ✅
 
-## Fase 6 — Busca full-text — ⬜ não iniciada
+## Fase 6 — Busca full-text — ✅ concluída
 
 Índice client-side sobre o cache IndexedDB (título + conteúdo), atualizado incrementalmente a
 cada escrita. Busca acessível via paleta + atalho dedicado, lista de resultados navegável por
 teclado.
 
+- [x] `src/shared/search/searchIndex.ts` — índice em memória (`Map<path, {title, content}>`,
+      estado em módulo, mesmo padrão de `useShortcuts`/`useTheme`) espelhado no IndexedDB via
+      `idb-keyval`: `ensureIndexReady`/`rebuildIndex` (varredura completa, usada só na primeira
+      vez que a busca abre numa sessão sem índice persistido utilizável), `upsertEntry`/
+      `removeSubtree`/`renameSubtree` (atualização incremental) e `search` (substring
+      case-insensitive em título+conteúdo, título rankeado acima de conteúdo, com snippet
+      recortado ao redor do match) — todas testadas em `searchIndex.test.ts` sem depender de um
+      `StorageAdapter` real
+- [x] `src/shared/storage/IndexingStorageAdapter.ts` — decorator que envolve qualquer
+      `StorageAdapter` (File System Access ou OPFS) e mantém o índice sincronizado em
+      `writeFile`/`deleteFile`/`rename`, sem exigir que cada feature (note-editor, file-tree,
+      daily-desk, command-palette) lembre de atualizar o índice manualmente — como todo código já
+      é obrigado a passar pelo `StorageAdapter`, decorá-lo é o único ponto que garante cobertura
+      de 100% das escritas. `rename` remapeia as entradas já indexadas por prefixo de caminho em
+      vez de reler o conteúdo do adapter (conteúdo não muda numa renomeação/movimentação — mesma
+      ideia de `remapPath`/`remapExpandedAndActive` em `file-tree/useFileTree.ts`, Fase 2).
+      Testado em `IndexingStorageAdapter.test.ts`; `createStorageAdapter.ts` passa a instanciar
+      sempre a versão decorada
+- [x] `forgetPersistedWorkspace` também reseta o índice (`resetSearchIndex`, memória + chave no
+      IndexedDB) — trocar de workspace não pode deixar entradas do workspace anterior
+      contaminando a busca do novo
+- [x] Feature `search` (`Search.vue` + `useSearch.ts`) — Dialog acionado por `mod+shift+f`: usa
+      `ListboxRoot`/`ListboxFilter`/`ListboxContent`/`ListboxItem` importados direto de `reka-ui`
+      em vez do composto `CommandDialog`/`Command` do shadcn-vue — `CommandInput` liga seu
+      `v-model` ao `filterState` do `Command` via `provide`/`inject`, que só é alcançável por um
+      descendente do próprio `<Command>`; como a lógica de busca já vive inteiramente em
+      `useSearch.ts` (chamado no `setup()` de `Search.vue`, antes/fora da árvore do `<Command>`
+      que só existiria no template), essa injeção não seria alcançável sem violar a regra de
+      View+Composable colocado. Índice construído sob demanda (`ensureIndexReady`) na primeira
+      abertura da sessão; abertura do diálogo não bloqueia nisso graças à reatividade do status
+      do índice (estado "construindo índice…" aparece sozinho)
+- [x] `useCommandPalette.ts`/`CommandPalette.vue`: item "Buscar em notas" no grupo "Aplicativo"
+      (depois de "Ir para Daily Desk") aciona `trigger('search:open')`, mesmo padrão de "Ir para
+      Daily Desk"
+- [x] Botão "Buscar em todas as notas" no header do `AppShell` (ícone `FileSearch`, distinto do
+      ícone de lupa já usado pela paleta de comandos)
+- [x] `e2e/search.spec.ts` — busca por conteúdo com ranking de título acima de conteúdo,
+      navegação de resultados só com `ArrowDown` (nenhum item vem destacado por padrão — a
+      primeira seta move o destaque para o primeiro resultado, refletindo exatamente o fluxo
+      "atalho → digitar → setas → Enter" do enunciado desta fase), nota diária também é
+      buscável, sem resultados, alcançável via atalho/botão do header/paleta, fecha com Escape,
+      checagem `@axe-core/playwright` — tudo via `page.keyboard.press`, nos 3 breakpoints
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` passando (100 testes unitários,
+      96 testes e2e)
+
 _Pronto quando:_ busca retorna resultados corretos num workspace fixture; fluxo atalho → digitar
-→ setas → Enter abre a nota, tudo por teclado.
+→ setas → Enter abre a nota, tudo por teclado. ✅
 
 ## Fase 7 — Organização: tags, doclinks, propriedades — ⬜ não iniciada
 

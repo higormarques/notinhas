@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarDays, Moon, Plus, Sun } from '@lucide/vue'
+import { CalendarDays, FileSearch, Moon, Plus, Sun } from '@lucide/vue'
 import { ListboxItem } from 'reka-ui'
 import {
   CommandDialog,
@@ -24,6 +24,7 @@ const {
   smartDateLabel,
   goToSmartDate,
   openDailyDesk,
+  openSearch,
   runToggleTheme,
   theme,
 } = useCommandPalette()
@@ -93,6 +94,10 @@ const {
           <CommandItem value="ir-para-daily-desk" @select="openDailyDesk">
             <CalendarDays class="size-4" />
             Ir para Daily Desk
+          </CommandItem>
+          <CommandItem value="buscar-em-notas" @select="openSearch">
+            <FileSearch class="size-4" />
+            Buscar em notas
           </CommandItem>
         </CommandGroup>
       </CommandList>

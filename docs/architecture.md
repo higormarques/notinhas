@@ -42,6 +42,11 @@ Nenhum outro código do app (features, stores, composables) deve tocar
 `showDirectoryPicker`/`navigator.storage` diretamente — sempre através do `StorageAdapter`
 injetado a partir de `shared/storage`.
 
+`createStorageAdapter.ts` sempre envolve a implementação concreta (File System Access ou OPFS)
+com `IndexingStorageAdapter` (`src/shared/storage/IndexingStorageAdapter.ts`, Fase 6) antes de
+atribuí-la a `activeAdapter` — um decorator que mantém `shared/search/searchIndex.ts` sincronizado
+a cada `writeFile`/`deleteFile`/`rename`. Ver seção "Índice de busca" abaixo.
+
 ### O que é fonte de verdade e o que é cache derivado
 
 - **Fonte de verdade**: o conteúdo da nota vive exclusivamente nos arquivos, acessados via
@@ -64,15 +69,46 @@ Toda mutation que escreve/renomeia/apaga invalida a(s) query key(s) afetada(s). 
 automático em foco/visibilidade da aba (`refetchOnWindowFocus`/`refetchOnReconnect` do Vue
 Query) é o mecanismo que substitui a ausência de filesystem watch nativo — ver ADR 0004.
 
-`['notes-index']` é uma solução provisória — percorre `listDirectory` recursivamente a partir da
-raiz a cada abertura da paleta (`staleTime: 0`, habilitada só enquanto a paleta está aberta), sem
-cache incremental. Isso é aceitável para o volume de notas esperado até aqui; a Fase 6 substitui
-essa listagem por um índice real (título + conteúdo) atualizado incrementalmente a cada escrita.
+`['notes-index']` segue sendo uma solução provisória — percorre `listDirectory` recursivamente a
+partir da raiz a cada abertura da paleta (`staleTime: 0`, habilitada só enquanto a paleta está
+aberta), sem cache incremental nem conteúdo dos arquivos (só path/nome, o suficiente para "ir
+para nota"/"nova nota"). A Fase 6 **não** substituiu essa listagem — criou um índice separado
+(`shared/search/searchIndex.ts`, fora do TanStack Query, ver seção "Índice de busca" abaixo) só
+para a busca full-text, que precisa do conteúdo de cada nota e de atualização incremental
+persistida. São dois mecanismos com necessidades diferentes o suficiente para não valer a pena
+unificar agora.
 
 A chave `['daily', date]` cogitada antes da Fase 5 não foi implementada como chave separada: uma
 nota diária é só um arquivo em `Daily/YYYY-MM-DD.md`, então reaproveitar `['file', path]` (via
 `dailyNotePath(date)`) e `['directory', 'Daily']` (para saber quais dias têm nota) evita duplicar
 o mesmo dado sob duas chaves diferentes.
+
+## Índice de busca (Fase 6)
+
+Fora do TanStack Query de propósito: precisa persistir entre reloads (`idb-keyval`, mesmo padrão
+do handle do workspace) e ser atualizado por um único ponto central (`IndexingStorageAdapter`,
+ver "Camada de storage" acima) em vez de por invalidação de query key espalhada por feature.
+
+- `src/shared/search/searchIndex.ts` — `Map<path, {title, content}>` reativo (estado em módulo,
+  mesmo padrão de `useShortcuts`/`useTheme`) espelhado no IndexedDB (chave
+  `notinhas:search-index`). `ensureIndexReady(adapter)` hidrata do IndexedDB uma vez por sessão
+  e, se não houver nada utilizável, faz `rebuildIndex` (varredura recursiva completa via
+  `listDirectory`+`readFile`) — chamado só quando a busca é aberta pela primeira vez numa sessão,
+  não no boot do workspace, para não gastar tempo varrendo o disco se o usuário nunca abrir a
+  busca.
+- Depois da primeira varredura, o índice nunca mais precisa de outra varredura completa:
+  `IndexingStorageAdapter.writeFile` chama `upsertEntry` (recebe o conteúdo direto, sem reler),
+  `deleteFile` chama `removeSubtree` (remove por prefixo de caminho — cobre arquivo único ou
+  pasta inteira, já que `StorageAdapter.deleteFile` também cobre os dois casos), e `rename` chama
+  `renameSubtree` (remapeia as entradas já indexadas por prefixo, sem reler conteúdo — não muda
+  numa renomeação/movimentação).
+- `search(query)` é substring case-insensitive sobre título+conteúdo, síncrono (não é uma query
+  assíncrona — o índice já está todo em memória). Resultados com match no título vêm antes dos
+  que só batem no conteúdo; o snippet é recortado ao redor da primeira ocorrência no conteúdo.
+- `forgetPersistedWorkspace` chama `resetSearchIndex` (memória + apaga a chave do IndexedDB) —
+  sem isso, trocar de workspace faria `ensureIndexReady` hidratar dados do workspace anterior.
+- A pasta `Daily/` (escondida da árvore de arquivos, Fase 5) **é** indexada normalmente — só a
+  visibilidade na árvore é filtrada, a busca cobre notas diárias como qualquer outra nota.
 
 ## Pinia stores
 
@@ -150,10 +186,24 @@ sempre responsabilidade do cache do TanStack Query.
     resultados de busca) são `computed` que leem um `updateTick` incrementado no callback
     `onTransaction` do editor — sem isso os botões da toolbar não atualizariam o estado
     pressionado/ativo ao mover o cursor ou editar.
-  - **Autosave** segue o mesmo padrão da Fase 2 (`watchDebounced` + `lastSavedContent`), só que a
-    fonte do `content` ref agora é `editor.getMarkdown()` chamado em `onUpdate`; trocar de nota
-    chama `setContent(data, { contentType: 'markdown', emitUpdate: false })` para não disparar
-    autosave espúrio ao carregar.
+  - **Autosave com debounce de 300ms via `setTimeout` manual, não `watchDebounced` do VueUse**:
+    a versão original (Fase 2/4) usava `watchDebounced(content, ...)`, observando o ref `content`
+    e lendo `activeNotePath.value` só na hora em que o callback debounced disparava. Isso tinha
+    um bug real: se o usuário trocasse de nota antes do debounce dos 300ms disparar, o callback
+    rodava com o **path novo** (já trocado) mas o **conteúdo antigo** (editado na nota anterior),
+    gravando a edição de uma nota no arquivo de outra — ou, dependendo de quão rápido a nota nova
+    carregava, achatava o timer pendente sem nunca salvar a edição original. `scheduleAutosave`/
+    `flushAutosave` capturam `path` e `value` como parâmetros no momento da edição (dentro do
+    próprio `onUpdate`), nunca lidos de `activeNotePath`/`content` de dentro do timer — o mesmo
+    autosave sempre grava no arquivo a que pertence, não importa quando ele efetivamente dispare.
+  - **Troca de nota**: `watch(activeNotePath, (newPath, oldPath) => ...)` dá *flush* imediato de
+    qualquer autosave pendente da nota antiga (não espera os 300ms) e limpa o editor
+    (`setContent('', { emitUpdate: false })`) na hora — sem isso, o conteúdo da nota anterior
+    continuava na tela até o `fileQuery` da nota nova resolver. `onBeforeUnmount` também faz
+    flush de um autosave pendente em vez de descartá-lo silenciosamente.
+  - A fonte do `content` ref é `editor.getMarkdown()` chamado em `onUpdate`; trocar de nota chama
+    `setContent(data, { contentType: 'markdown', emitUpdate: false })` para não disparar autosave
+    espúrio ao carregar.
 - `daily-desk` (`src/features/daily-desk/`, Fase 5) — Dialog acionado por `mod+j` (registrado em
   `useShortcuts`) com um calendário para abrir/criar a nota diária de um dia:
   - **Composição manual do calendário**: usa `CalendarRoot` (importado direto de `reka-ui`, mesmo
@@ -188,6 +238,28 @@ sempre responsabilidade do cache do TanStack Query.
     por notas diárias é feita pelo Daily Desk e pela paleta ("ir para data"), não pela árvore. O
     filtro é local à listagem raiz (não afeta uma subpasta aninhada chamada "Daily" nem outros
     consumidores de `['directory', path]`, como o `notes-index` da paleta).
+- `search` (`src/features/search/`, Fase 6) — Dialog acionado por `mod+shift+f` com busca
+  full-text sobre `shared/search/searchIndex.ts` (ver seção "Índice de busca" acima):
+  - **`ListboxRoot`/`ListboxFilter`/`ListboxContent`/`ListboxItem` direto de `reka-ui`, não
+    `CommandDialog`/`Command` do shadcn-vue**: `CommandInput.vue` liga seu texto digitado ao
+    `filterState` do `Command` via `provide`/`inject` (`useCommand()`), só alcançável por um
+    componente **descendente** de `<Command>`. Como `useSearch()` roda no `setup()` de
+    `Search.vue` — antes/fora da árvore onde `<Command>` sequer existe ainda no template — não
+    haveria como a lógica em `useSearch.ts` consumir esse contexto sem violar a regra de
+    View+Composable colocado (lógica teria que morar num componente filho do `<Command>`, não no
+    composable). Usar os primitivos "crus" (mesmo padrão já usado para "Criar nota"/"Ir para
+    data" na paleta) evita o problema: o `query` bind direto a `ListboxFilter` via `v-model` é
+    gerenciado inteiramente por `useSearch.ts`.
+  - **Nenhum item vem destacado por padrão** ao abrir ou digitar — a primeira seta move o
+    destaque para o primeiro resultado da coleção. Isso reflete o próprio enunciado da Fase 6
+    ("atalho → digitar → **setas** → Enter") e é diferente do Daily Desk (que sempre tem "hoje"
+    pré-selecionado) e da paleta de comandos (cujo `Command` do shadcn-vue destaca a primeira
+    nota que bate com a busca automaticamente).
+  - **Índice construído sob demanda**: `open()` dispara `ensureIndexReady` sem aguardar — o
+    status do índice é reativo (`getIndexStatus()`), então a UI ("Construindo índice de busca…")
+    atualiza sozinha conforme o progresso, sem bloquear a abertura do diálogo.
+  - `useCommandPalette.ts` ganhou "Buscar em notas" no grupo "Aplicativo" (aciona
+    `trigger('search:open')`, mesmo padrão de "Ir para Daily Desk").
 
 ## Testes
 

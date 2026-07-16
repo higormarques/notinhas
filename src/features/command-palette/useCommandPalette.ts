@@ -142,6 +142,11 @@ export function useCommandPalette() {
     trigger('daily-desk:open')
   }
 
+  function openSearch() {
+    close()
+    trigger('search:open')
+  }
+
   return {
     isOpen,
     open,
@@ -156,6 +161,7 @@ export function useCommandPalette() {
     smartDateLabel,
     goToSmartDate,
     openDailyDesk,
+    openSearch,
     runToggleTheme,
     theme,
   }

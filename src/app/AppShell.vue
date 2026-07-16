@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarDays, Menu, PanelRight, Moon, Search, Sun, TriangleAlert } from '@lucide/vue'
+import { CalendarDays, FileSearch, Menu, PanelRight, Moon, Search, Sun, TriangleAlert } from '@lucide/vue'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import {
@@ -18,6 +18,7 @@ import CommandPalette from '@/features/command-palette/CommandPalette.vue'
 import DailyDesk from '@/features/daily-desk/DailyDesk.vue'
 import FileTree from '@/features/file-tree/FileTree.vue'
 import NoteEditor from '@/features/note-editor/NoteEditor.vue'
+import SearchDialog from '@/features/search/Search.vue'
 import WorkspaceConnect from '@/features/workspace-connect/WorkspaceConnect.vue'
 import { useAppShell } from './useAppShell'
 
@@ -35,6 +36,7 @@ const {
   isOpfsFallback,
   openCommandPalette,
   openDailyDesk,
+  openSearch,
 } = useAppShell()
 </script>
 
@@ -44,6 +46,7 @@ const {
   <div v-else class="flex h-svh w-full flex-col bg-background text-foreground">
     <CommandPalette />
     <DailyDesk />
+    <SearchDialog />
 
     <Alert v-if="isOpfsFallback" class="shrink-0 rounded-none border-x-0 border-t-0">
       <TriangleAlert class="size-4" />
@@ -101,6 +104,14 @@ const {
           @click="openDailyDesk"
         >
           <CalendarDays class="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Buscar em todas as notas"
+          @click="openSearch"
+        >
+          <FileSearch class="size-4" />
         </Button>
         <Button
           variant="ghost"

@@ -29,9 +29,14 @@ export function useAppShell() {
     trigger('daily-desk:open')
   }
 
+  function openSearch() {
+    trigger('search:open')
+  }
+
   return {
     openCommandPalette,
     openDailyDesk,
+    openSearch,
     breakpoint,
     theme,
     toggleTheme,

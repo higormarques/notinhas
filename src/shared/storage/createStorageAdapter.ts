@@ -5,12 +5,14 @@ import {
   isFileSystemAccessSupported,
   pickWorkspaceDirectory,
 } from './FileSystemAccessAdapter'
+import { IndexingStorageAdapter } from './IndexingStorageAdapter'
 import { getOpfsRoot, OPFSAdapter } from './OPFSAdapter'
 import {
   clearPersistedWorkspaceHandle,
   getPersistedWorkspaceHandle,
   setPersistedWorkspaceHandle,
 } from './handleStore'
+import { resetSearchIndex } from '@/shared/search/searchIndex'
 
 let activeAdapter: StorageAdapter | null = null
 
@@ -40,7 +42,7 @@ export { isFileSystemAccessSupported }
 export async function connectFileSystemWorkspace(): Promise<Workspace> {
   const handle = await pickWorkspaceDirectory()
   await persistHandleBestEffort(handle)
-  activeAdapter = new FileSystemAccessAdapter(handle)
+  activeAdapter = new IndexingStorageAdapter(new FileSystemAccessAdapter(handle))
   return toWorkspace(handle, 'file-system-access')
 }
 
@@ -59,7 +61,7 @@ async function persistHandleBestEffort(handle: FileSystemDirectoryHandle): Promi
 
 export async function connectOpfsWorkspace(): Promise<Workspace> {
   const handle = await getOpfsRoot()
-  activeAdapter = new OPFSAdapter(handle)
+  activeAdapter = new IndexingStorageAdapter(new OPFSAdapter(handle))
   return { name: 'Workspace local (sandbox do navegador)', adapterKind: 'opfs' }
 }
 
@@ -71,7 +73,7 @@ export async function reconnectPersistedWorkspace(): Promise<ReconnectResult> {
 
   const permission = await handle.queryPermission({ mode: 'readwrite' })
   if (permission === 'granted') {
-    activeAdapter = new FileSystemAccessAdapter(handle)
+    activeAdapter = new IndexingStorageAdapter(new FileSystemAccessAdapter(handle))
     return { status: 'connected', workspace: toWorkspace(handle, 'file-system-access') }
   }
   if (permission === 'denied') {
@@ -83,7 +85,7 @@ export async function reconnectPersistedWorkspace(): Promise<ReconnectResult> {
     requestPermission: async () => {
       const result = await handle.requestPermission({ mode: 'readwrite' })
       if (result === 'granted') {
-        activeAdapter = new FileSystemAccessAdapter(handle)
+        activeAdapter = new IndexingStorageAdapter(new FileSystemAccessAdapter(handle))
         return {
           status: 'connected',
           workspace: toWorkspace(handle, 'file-system-access'),
@@ -96,7 +98,7 @@ export async function reconnectPersistedWorkspace(): Promise<ReconnectResult> {
 
 export async function forgetPersistedWorkspace(): Promise<void> {
   activeAdapter = null
-  await clearPersistedWorkspaceHandle()
+  await Promise.all([clearPersistedWorkspaceHandle(), resetSearchIndex()])
 }
 
 function toWorkspace(
