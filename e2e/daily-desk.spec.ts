@@ -64,7 +64,7 @@ test('does not show the Daily folder in the file tree', async ({ page }, testInf
   })
 
   await openTreeOnMobile(page, testInfo)
-  await expect(page.getByRole('treeitem', { name: 'nota-normal.md', exact: true })).toBeVisible()
+  await expect(page.getByRole('treeitem', { name: 'nota-normal', exact: true })).toBeVisible()
   await expect(page.getByRole('treeitem', { name: 'Daily', exact: true })).toHaveCount(0)
   await closeTreeOnMobile(page, testInfo)
 })

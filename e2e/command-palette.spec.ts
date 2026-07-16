@@ -50,7 +50,7 @@ test('creates a new note from the command palette when there is no match, keyboa
 
   await openTreeOnMobile(page, testInfo)
   await expect(
-    page.getByRole('treeitem', { name: 'Ideia nova.md', exact: true }),
+    page.getByRole('treeitem', { name: 'Ideia nova', exact: true }),
   ).toBeVisible()
   await closeTreeOnMobile(page, testInfo)
 })

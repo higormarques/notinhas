@@ -35,7 +35,7 @@ test('creates, edits, renames, and deletes a note entirely via keyboard', async 
   await page.keyboard.type('Primeira nota')
   await page.keyboard.press('Enter')
 
-  const noteItem = page.getByRole('treeitem', { name: 'Primeira nota.md', exact: true })
+  const noteItem = page.getByRole('treeitem', { name: 'Primeira nota', exact: true })
   await expect(noteItem).toBeVisible()
 
   await closeTreeOnMobile(page, testInfo)
@@ -57,7 +57,7 @@ test('creates, edits, renames, and deletes a note entirely via keyboard', async 
   await page.keyboard.type('Renomeada.md')
   await page.keyboard.press('Enter')
 
-  const renamedItem = page.getByRole('treeitem', { name: 'Renomeada.md', exact: true })
+  const renamedItem = page.getByRole('treeitem', { name: 'Renomeada', exact: true })
   await expect(renamedItem).toBeVisible()
   await expect(noteItem).toHaveCount(0)
 
@@ -111,7 +111,7 @@ test('creates a folder, a nested note inside it, and navigates the tree with arr
   await page.keyboard.type('2026-07-15')
   await page.keyboard.press('Enter')
 
-  const nestedItem = page.getByRole('treeitem', { name: '2026-07-15.md', exact: true })
+  const nestedItem = page.getByRole('treeitem', { name: '2026-07-15', exact: true })
   await expect(nestedItem).toBeVisible()
   await expect(nestedItem).toHaveAttribute('aria-level', '2')
 
@@ -145,8 +145,8 @@ test('reorganizes notes and folders via drag-and-drop', async ({ page }, testInf
   await createRootItem('Nova nota', 'Ideias')
 
   const folderItem = page.getByRole('treeitem', { name: 'Projetos', exact: true })
-  const draftItem = page.getByRole('treeitem', { name: 'Rascunho.md', exact: true })
-  const ideasItem = page.getByRole('treeitem', { name: 'Ideias.md', exact: true })
+  const draftItem = page.getByRole('treeitem', { name: 'Rascunho', exact: true })
+  const ideasItem = page.getByRole('treeitem', { name: 'Ideias', exact: true })
   await expect(folderItem).toBeVisible()
   await expect(draftItem).toBeVisible()
   await expect(ideasItem).toBeVisible()
@@ -154,18 +154,18 @@ test('reorganizes notes and folders via drag-and-drop', async ({ page }, testInf
 
   await draftItem.dragTo(folderItem)
 
-  await expect(page.getByRole('treeitem', { name: 'Rascunho.md', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('treeitem', { name: 'Rascunho', exact: true })).toHaveCount(0)
   // Depois de um drop via mouse o foco lógico da árvore pode recair sobre outra linha visível
   // (a árvore permanece navegável, só não força a revelação do item movido) — expandir a pasta
   // via clique, e não via ArrowRight, evita depender desse estado interno de foco.
   await folderItem.click()
-  const nestedDraftItem = page.getByRole('treeitem', { name: 'Rascunho.md', exact: true })
+  const nestedDraftItem = page.getByRole('treeitem', { name: 'Rascunho', exact: true })
   await expect(nestedDraftItem).toBeVisible()
   await expect(nestedDraftItem).toHaveAttribute('aria-level', '2')
 
   await nestedDraftItem.dragTo(ideasItem)
 
-  const rootDraftItem = page.getByRole('treeitem', { name: 'Rascunho.md', exact: true })
+  const rootDraftItem = page.getByRole('treeitem', { name: 'Rascunho', exact: true })
   await expect(rootDraftItem).toBeVisible()
   await expect(rootDraftItem).toHaveAttribute('aria-level', '1')
 

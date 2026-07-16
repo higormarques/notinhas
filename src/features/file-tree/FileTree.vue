@@ -105,7 +105,7 @@ const {
             >
               <Folder v-if="row.entry.kind === 'directory'" class="size-4 shrink-0" />
               <File v-else class="size-4 shrink-0" />
-              <span class="truncate">{{ row.entry.name }}</span>
+              <span class="truncate">{{ row.displayName }}</span>
             </div>
           </ContextMenuTrigger>
           <ContextMenuContent>

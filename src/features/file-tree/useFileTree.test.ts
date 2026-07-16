@@ -130,6 +130,7 @@ describe('useFileTree', () => {
         entry: { name: 'bemvindo.md', path: 'bemvindo.md', kind: 'file' },
         depth: 0,
         isExpanded: false,
+        displayName: 'bemvindo',
       },
     ])
     expect(result.focusedPath.value).toBe('bemvindo.md')
@@ -237,6 +238,7 @@ describe('useFileTree', () => {
         entry: { name: 'bemvindo.md', path: 'bemvindo.md', kind: 'file' },
         depth: 0,
         isExpanded: false,
+        displayName: 'bemvindo',
       },
     ])
   })
@@ -253,6 +255,19 @@ describe('useFileTree', () => {
     await flushPromises()
 
     expect(result.rows.value.map((row) => row.entry.path)).toContain('Notas/Daily')
+  })
+
+  it('strips the .md extension from file display names but not folder names', async () => {
+    await adapter.createDirectory('Notas.md')
+    await adapter.writeFile('bemvindo.md', '')
+
+    const result = mountComposable()
+    await flushPromises()
+
+    expect(result.rows.value.map((row) => row.displayName)).toEqual([
+      'bemvindo',
+      'Notas.md',
+    ])
   })
 
   it('moves keyboard focus between visible rows with arrow keys', async () => {

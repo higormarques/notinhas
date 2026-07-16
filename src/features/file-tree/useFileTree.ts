@@ -10,6 +10,7 @@ export interface FileTreeRow {
   entry: DirectoryEntry
   depth: number
   isExpanded: boolean
+  displayName: string
 }
 
 type DialogKind = 'closed' | 'create-note' | 'create-folder' | 'rename' | 'delete'
@@ -41,6 +42,11 @@ function isWithin(path: string, ancestorPath: string): boolean {
 function remapPath(path: string, fromBase: string, toBase: string): string {
   if (path === fromBase) return toBase
   return toBase + path.slice(fromBase.length)
+}
+
+function displayNameFor(entry: DirectoryEntry): string {
+  if (entry.kind === 'directory' || !entry.name.endsWith('.md')) return entry.name
+  return entry.name.slice(0, -'.md'.length)
 }
 
 export function useFileTree() {
@@ -90,7 +96,7 @@ export function useFileTree() {
       return entries.flatMap((entry) => {
         const isExpanded =
           entry.kind === 'directory' && expandedPaths.value.has(entry.path)
-        const row: FileTreeRow = { entry, depth, isExpanded }
+        const row: FileTreeRow = { entry, depth, isExpanded, displayName: displayNameFor(entry) }
         return isExpanded ? [row, ...walk(entry.path, depth + 1)] : [row]
       })
     }
