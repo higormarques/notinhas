@@ -364,4 +364,60 @@ const {
 .note-search-match-active {
   background-color: color-mix(in srgb, orange 55%, transparent);
 }
+
+.note-tag {
+  color: var(--accent-foreground);
+  background-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 0.25em;
+  padding: 0 0.2em;
+}
+
+.note-doclink {
+  border-radius: 0.25em;
+  padding: 0 0.2em;
+  cursor: pointer;
+}
+
+.note-doclink-resolved {
+  color: var(--primary);
+  background-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  text-decoration: underline;
+}
+
+.note-doclink-unresolved {
+  color: var(--muted-foreground);
+  border-bottom: 1px dashed var(--muted-foreground);
+  cursor: default;
+}
+
+.note-doclink-suggestion-popup {
+  z-index: 50;
+  min-width: 12rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 4px 12px color-mix(in srgb, black 15%, transparent);
+  padding: 0.25rem;
+}
+
+.note-doclink-suggestion-item {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.note-doclink-suggestion-item.is-selected {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.note-doclink-suggestion-empty {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
 </style>

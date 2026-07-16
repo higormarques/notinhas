@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  buildTitleIndex,
   ensureIndexReady,
   getIndexStatus,
+  listTagsWithCounts,
+  notesForTag,
+  notesLinkingTo,
   rebuildIndex,
   removeSubtree,
   renameSubtree,
@@ -82,8 +86,18 @@ describe('searchIndex', () => {
       const adapter = createFakeAdapter({ 'nota.md': 'conteudo' })
       await rebuildIndex(adapter)
       expect(idbStore.get('notinhas:search-index')).toEqual([
-        { path: 'nota.md', title: 'nota', content: 'conteudo' },
+        { path: 'nota.md', title: 'nota', content: 'conteudo', tags: [], links: [] },
       ])
+    })
+
+    it('strips frontmatter before computing content/tags/links', async () => {
+      const adapter = createFakeAdapter({
+        'nota.md': '---\ncriado: 2026-07-15\n---\ncorpo com #tag e [[Outra]]',
+      })
+      await rebuildIndex(adapter)
+      expect(search('criado')).toEqual([])
+      expect(notesForTag('tag').map((e) => e.path)).toEqual(['nota.md'])
+      expect(notesForTag('tag')[0].links).toEqual(['Outra'])
     })
   })
 
@@ -189,6 +203,73 @@ describe('searchIndex', () => {
         'Destino/a.md',
         'Destino/sub/b.md',
       ])
+    })
+  })
+
+  describe('listTagsWithCounts', () => {
+    it('counts tags across notes and sorts by count desc, then name', async () => {
+      await upsertEntry('a.md', '#projeto #urgente')
+      await upsertEntry('b.md', '#projeto')
+      await upsertEntry('c.md', '#zeta')
+
+      expect(listTagsWithCounts()).toEqual([
+        { tag: 'projeto', count: 2 },
+        { tag: 'urgente', count: 1 },
+        { tag: 'zeta', count: 1 },
+      ])
+    })
+  })
+
+  describe('notesForTag', () => {
+    it('is case-insensitive and sorts by title', async () => {
+      await upsertEntry('b.md', '#projeto')
+      await upsertEntry('a.md', '#Projeto')
+
+      expect(notesForTag('PROJETO').map((e) => e.path)).toEqual(['a.md', 'b.md'])
+    })
+  })
+
+  describe('buildTitleIndex', () => {
+    it('maps lowercase title to path, last write winning on collision', async () => {
+      await upsertEntry('Pasta1/Ideias.md', 'uma')
+      await upsertEntry('Pasta2/Ideias.md', 'outra')
+
+      expect(buildTitleIndex().get('ideias')).toBe('Pasta2/Ideias.md')
+    })
+  })
+
+  describe('notesLinkingTo', () => {
+    it('resolves notes whose [[link]] target the given note by title', async () => {
+      await upsertEntry('Alvo.md', 'conteudo')
+      await upsertEntry('Origem.md', 'veja [[Alvo]] aqui')
+
+      expect(notesLinkingTo('Alvo.md').map((e) => e.path)).toEqual(['Origem.md'])
+    })
+
+    it('resolves by the CURRENT title, not a path recorded at index time', async () => {
+      // notesLinkingTo nunca guarda o path resolvido — resolve o texto do link contra o título
+      // atual a cada chamada, então uma nota cujo título já era "Renomeada" desde sempre resolve
+      // normalmente (a limitação real de renomear uma nota-alvo depois de outras já linkarem
+      // para o título antigo é documentada na ADR 0006: o texto do link não é reescrito
+      // automaticamente, então vira um link não-resolvido até o usuário atualizar manualmente).
+      await upsertEntry('Renomeada.md', 'conteudo')
+      await upsertEntry('Origem.md', 'veja [[Renomeada]] aqui')
+
+      expect(notesLinkingTo('Renomeada.md').map((e) => e.path)).toEqual(['Origem.md'])
+    })
+
+    it('stops resolving old link text once the target note is renamed (documented limitation)', async () => {
+      await upsertEntry('Alvo.md', 'conteudo')
+      await upsertEntry('Origem.md', 'veja [[Alvo]] aqui')
+
+      await renameSubtree('Alvo.md', 'Renomeada.md')
+
+      expect(notesLinkingTo('Renomeada.md')).toEqual([])
+    })
+
+    it('returns an empty array when nothing links to the note', async () => {
+      await upsertEntry('Sozinha.md', 'conteudo')
+      expect(notesLinkingTo('Sozinha.md')).toEqual([])
     })
   })
 })

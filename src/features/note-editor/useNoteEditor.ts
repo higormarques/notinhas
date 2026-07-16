@@ -11,7 +11,12 @@ import { Markdown } from '@tiptap/markdown'
 import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
 import { useNotesStore } from '@/shared/stores/notes'
 import { useShortcuts } from '@/shared/composables/useShortcuts'
+import { parseFrontmatter, serializeNote, stampTimestamps, type Frontmatter } from '@/entities/Frontmatter'
+import { resolveDocLinkTarget, unescapeDocLinkMarkdown } from '@/entities/DocLink'
+import { buildTitleIndex, ensureIndexReady, titleFromPath } from '@/shared/search/searchIndex'
 import { FindInNote } from './findInNoteExtension'
+import { TagHighlight } from './tagHighlightExtension'
+import { DocLink } from './docLinkExtension'
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -26,6 +31,11 @@ export function useNoteEditor() {
   const { register, unregister } = useShortcuts()
 
   const content = ref('')
+  // Frontmatter da nota ativa, separado do corpo antes de entrar no editor (ver watcher de
+  // `fileQuery.data` abaixo) e recomposto a cada autosave (`flushAutosave`). Local à composable —
+  // não exposto no retorno, já que o painel de Propriedades (`note-properties`) faz seu próprio
+  // ciclo independente de leitura/escrita (ver ADR 0006 sobre a reconciliação entre os dois).
+  const frontmatter = ref<Frontmatter>({})
   const saveStatus = ref<SaveStatus>('idle')
   const updateTick = ref(0)
   const isFindOpen = ref(false)
@@ -68,7 +78,15 @@ export function useNoteEditor() {
     if (value === lastSavedContent && path === lastSavedPath) return
     saveStatus.value = 'saving'
     try {
-      await saveMutation.mutateAsync({ path, content: value })
+      // Recompõe frontmatter+corpo antes de gravar: `atualizado` é sempre re-carimbado, `criado`
+      // só na primeira vez. Não há lock com o painel de Propriedades escrevendo o mesmo arquivo
+      // em paralelo — limitação aceita, documentada na ADR 0006 (mesma filosofia de eventual
+      // consistency via refetch já aceita pela ADR 0004, apropriada para app local-first de
+      // usuário único).
+      const stamped = stampTimestamps(frontmatter.value, new Date())
+      const fullContent = serializeNote(stamped, value)
+      await saveMutation.mutateAsync({ path, content: fullContent })
+      frontmatter.value = stamped
       lastSavedContent = value
       lastSavedPath = path
       saveStatus.value = 'saved'
@@ -84,6 +102,24 @@ export function useNoteEditor() {
     }, AUTOSAVE_DEBOUNCE_MS)
   }
 
+  function resolveTarget(target: string): string | null {
+    return resolveDocLinkTarget(target, buildTitleIndex())
+  }
+
+  async function getSuggestions(query: string): Promise<string[]> {
+    // `await` aqui (em vez de fire-and-forget) importa: na primeira vez que o usuário digita
+    // `[[` numa sessão, o índice pode ainda não estar construído — sem esperar, `items()` do
+    // `@tiptap/suggestion` veria sempre uma lista vazia nessa primeira vez, mesmo com notas
+    // existentes. `@tiptap/suggestion` já suporta `items` assíncrono nativamente.
+    await ensureIndexReady(getStorageAdapter())
+    const lowerQuery = query.trim().toLowerCase()
+    const ownPath = activeNotePath.value
+    return Array.from(buildTitleIndex().entries())
+      .filter(([lowerTitle, path]) => path !== ownPath && lowerTitle.includes(lowerQuery))
+      .map(([, path]) => titleFromPath(path))
+      .sort()
+  }
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false, heading: { levels: [...HEADING_LEVELS] } }),
@@ -93,6 +129,12 @@ export function useNoteEditor() {
       TableKit.configure({ table: { resizable: false } }),
       Markdown,
       FindInNote,
+      TagHighlight,
+      DocLink.configure({
+        resolveTarget,
+        onNavigate: (path) => notesStore.openNote(path),
+        getSuggestions,
+      }),
     ],
     content: '',
     editorProps: {
@@ -106,7 +148,9 @@ export function useNoteEditor() {
     onUpdate: ({ editor: instance }) => {
       if (suppressAutosave) return
       const path = activeNotePath.value
-      const value = instance.getMarkdown()
+      // `getMarkdown()` faz backslash-escape de colchetes duplos (`\[\[`/`\]\]`) — desfeito aqui
+      // para que `[[Nota]]` sobreviva ao autosave como texto literal (ver `DocLink.ts`).
+      const value = unescapeDocLinkMarkdown(instance.getMarkdown())
       content.value = value
       if (path) scheduleAutosave(path, value)
     },
@@ -135,11 +179,13 @@ export function useNoteEditor() {
     [() => fileQuery.data.value, editor],
     ([data, editorInstance]) => {
       if (data === undefined || !editorInstance) return
+      const { frontmatter: parsedFrontmatter, body } = parseFrontmatter(data)
+      frontmatter.value = parsedFrontmatter
       suppressAutosave = true
-      editorInstance.commands.setContent(data, { contentType: 'markdown', emitUpdate: false })
+      editorInstance.commands.setContent(body, { contentType: 'markdown', emitUpdate: false })
       suppressAutosave = false
-      content.value = data
-      lastSavedContent = data
+      content.value = body
+      lastSavedContent = body
       lastSavedPath = activeNotePath.value
       saveStatus.value = 'idle'
     },

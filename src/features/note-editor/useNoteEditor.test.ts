@@ -7,6 +7,15 @@ import { useNoteEditor } from './useNoteEditor'
 import { useNotesStore } from '@/shared/stores/notes'
 import * as storageAdapterModule from '@/shared/storage/createStorageAdapter'
 import type { StorageAdapter } from '@/shared/storage/StorageAdapter'
+import { parseFrontmatter } from '@/entities/Frontmatter'
+import { resetSearchIndex, upsertEntry } from '@/shared/search/searchIndex'
+
+/** Todo autosave agora grava frontmatter (`criado`/`atualizado`) além do corpo — os testes que
+ * checam o texto exato gravado no arquivo comparam só o corpo, separado via `parseFrontmatter`. */
+function savedBody(adapter: StorageAdapter, callIndex = 0): string {
+  const [, content] = vi.mocked(adapter.writeFile).mock.calls[callIndex]
+  return parseFrontmatter(content).body
+}
 
 vi.mock('@/shared/storage/createStorageAdapter', () => ({
   getStorageAdapter: vi.fn(),
@@ -92,7 +101,8 @@ describe('useNoteEditor', () => {
     await vi.advanceTimersByTimeAsync(700)
     await flushPromises()
 
-    expect(adapter.writeFile).toHaveBeenCalledWith('nota.md', 'conteudo inicial editado')
+    expect(adapter.writeFile).toHaveBeenCalledWith('nota.md', expect.any(String))
+    expect(savedBody(adapter)).toBe('conteudo inicial editado')
     expect(result.saveStatus.value).toBe('saved')
   })
 
@@ -108,7 +118,8 @@ describe('useNoteEditor', () => {
 
     await vi.advanceTimersByTimeAsync(100)
     await flushPromises()
-    expect(adapter.writeFile).toHaveBeenCalledWith('nota.md', 'conteudo inicial editado')
+    expect(adapter.writeFile).toHaveBeenCalledWith('nota.md', expect.any(String))
+    expect(savedBody(adapter)).toBe('conteudo inicial editado')
   })
 
   it('round-trips headings and lists through markdown serialization', async () => {
@@ -122,9 +133,9 @@ describe('useNoteEditor', () => {
     await vi.advanceTimersByTimeAsync(700)
     await flushPromises()
 
-    const [savedPath, savedContent] = vi.mocked(adapter.writeFile).mock.calls[0]
+    const [savedPath] = vi.mocked(adapter.writeFile).mock.calls[0]
     expect(savedPath).toBe('nota.md')
-    expect(savedContent.trim()).toBe('# Título\n\n- item um\n- item dois')
+    expect(savedBody(adapter).trim()).toBe('# Título\n\n- item um\n- item dois')
   })
 
   it('does not write back unchanged content just from loading a note', async () => {
@@ -137,6 +148,110 @@ describe('useNoteEditor', () => {
 
     expect(adapter.writeFile).not.toHaveBeenCalled()
     expect(result.editor.value?.getText()).toBe('conteudo inicial')
+  })
+
+  describe('frontmatter', () => {
+    it('strips a leading frontmatter block before loading content into the editor', async () => {
+      adapter = createFakeAdapter({
+        'nota.md': '---\ncriado: 2026-07-01T00:00:00.000Z\n---\ncorpo da nota',
+      })
+      vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
+      useNotesStore().openNote('nota.md')
+      const { result } = mountComposable()
+      await flushPromises()
+
+      expect(result.editor.value?.getText()).toBe('corpo da nota')
+    })
+
+    it('stamps criado and atualizado to the same timestamp on the first ever save', async () => {
+      useNotesStore().openNote('nota.md')
+      const { result } = mountComposable()
+      await flushPromises()
+
+      result.editor.value?.commands.setContent('editado')
+      await vi.advanceTimersByTimeAsync(700)
+      await flushPromises()
+
+      const { frontmatter } = parseFrontmatter(vi.mocked(adapter.writeFile).mock.calls[0][1])
+      expect(frontmatter.criado).toBeDefined()
+      expect(frontmatter.criado).toBe(frontmatter.atualizado)
+    })
+
+    it('preserves criado while bumping atualizado on a subsequent save', async () => {
+      useNotesStore().openNote('nota.md')
+      const { result } = mountComposable()
+      await flushPromises()
+
+      result.editor.value?.commands.setContent('primeira edição')
+      await vi.advanceTimersByTimeAsync(700)
+      await flushPromises()
+      const first = parseFrontmatter(vi.mocked(adapter.writeFile).mock.calls[0][1]).frontmatter
+
+      result.editor.value?.commands.setContent('segunda edição')
+      await vi.advanceTimersByTimeAsync(700)
+      await flushPromises()
+      const second = parseFrontmatter(vi.mocked(adapter.writeFile).mock.calls[1][1]).frontmatter
+
+      expect(second.criado).toBe(first.criado)
+      expect(second.atualizado).not.toBe(first.atualizado)
+    })
+  })
+
+  it('round-trips literal #tag and [[link]] text through markdown save (no custom node needed)', async () => {
+    useNotesStore().openNote('nota.md')
+    const { result } = mountComposable()
+    await flushPromises()
+
+    result.editor.value?.commands.setContent('texto com #tag e [[Outra Nota]]', {
+      contentType: 'markdown',
+    })
+    await vi.advanceTimersByTimeAsync(700)
+    await flushPromises()
+
+    expect(savedBody(adapter).trim()).toBe('texto com #tag e [[Outra Nota]]')
+  })
+
+  it('Mod-Enter navigates to the note a resolved [[link]] points to, with cursor inside it', async () => {
+    await resetSearchIndex()
+    await upsertEntry('Outra Nota.md', 'conteudo')
+
+    useNotesStore().openNote('nota.md')
+    const { result } = mountComposable()
+    await flushPromises()
+
+    result.editor.value?.commands.setContent('veja [[Outra Nota]] aqui', {
+      contentType: 'markdown',
+    })
+    await flushPromises()
+
+    // "veja [[Outra Nota]] aqui" — o link cobre aproximadamente as posições 6-20 do doc
+    // (parágrafo começa em 1); 10 cai com folga dentro do range, sem depender de contagem exata.
+    result.editor.value?.commands.setTextSelection(10)
+    const handled = result.editor.value?.commands.followDocLinkAtCursor()
+
+    expect(handled).toBe(true)
+    expect(useNotesStore().activeNotePath).toBe('Outra Nota.md')
+
+    await resetSearchIndex()
+  })
+
+  it('Mod-Enter does nothing when the cursor is not inside a resolved link', async () => {
+    await resetSearchIndex()
+
+    useNotesStore().openNote('nota.md')
+    const { result } = mountComposable()
+    await flushPromises()
+
+    result.editor.value?.commands.setContent('texto sem link nenhum', {
+      contentType: 'markdown',
+    })
+    await flushPromises()
+
+    result.editor.value?.commands.setTextSelection(5)
+    const handled = result.editor.value?.commands.followDocLinkAtCursor()
+
+    expect(handled).toBe(false)
+    expect(useNotesStore().activeNotePath).toBe('nota.md')
   })
 
   it('finds and cycles through matches in the note', async () => {
@@ -240,7 +355,8 @@ describe('useNoteEditor', () => {
       await flushPromises()
 
       // troca de nota já dispara o flush imediatamente, sem esperar o debounce natural
-      expect(slow.adapter.writeFile).toHaveBeenCalledWith('a.md', 'conteudo A EDITADO')
+      expect(slow.adapter.writeFile).toHaveBeenCalledWith('a.md', expect.any(String))
+      expect(savedBody(slow.adapter)).toBe('conteudo A EDITADO')
       expect(slow.adapter.writeFile).not.toHaveBeenCalledWith('b.md', expect.anything())
 
       // mesmo que o debounce (que já foi cancelado pelo flush acima) tivesse disparado agora,

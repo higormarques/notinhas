@@ -16,7 +16,8 @@ import {
 } from '@/shared/ui/sheet'
 import CommandPalette from '@/features/command-palette/CommandPalette.vue'
 import DailyDesk from '@/features/daily-desk/DailyDesk.vue'
-import FileTree from '@/features/file-tree/FileTree.vue'
+import FileNavigator from '@/features/file-navigator/FileNavigator.vue'
+import NoteContextPanel from '@/features/note-context-panel/NoteContextPanel.vue'
 import NoteEditor from '@/features/note-editor/NoteEditor.vue'
 import SearchDialog from '@/features/search/Search.vue'
 import WorkspaceConnect from '@/features/workspace-connect/WorkspaceConnect.vue'
@@ -140,7 +141,7 @@ const {
     >
       <ResizablePanel :default-size="20" :min-size="15" :max-size="35">
         <div class="h-full overflow-hidden">
-          <FileTree />
+          <FileNavigator />
         </div>
       </ResizablePanel>
       <ResizableHandle with-handle />
@@ -151,24 +152,21 @@ const {
       </ResizablePanel>
       <ResizableHandle with-handle />
       <ResizablePanel :default-size="25" :min-size="15" :max-size="35">
-        <div class="h-full overflow-auto p-4 text-sm text-muted-foreground">
-          Painel contextual (backlinks/propriedades — Fase 7)
+        <div class="h-full overflow-hidden">
+          <NoteContextPanel />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
 
     <div v-else-if="breakpoint === 'tablet'" class="flex flex-1 overflow-hidden">
       <aside v-if="isLeftPanelOpen" class="w-56 shrink-0 overflow-hidden border-r">
-        <FileTree />
+        <FileNavigator />
       </aside>
       <main class="flex-1 overflow-hidden">
         <NoteEditor />
       </main>
-      <aside
-        v-if="isRightPanelOpen"
-        class="w-64 shrink-0 overflow-auto border-l p-4 text-sm text-muted-foreground"
-      >
-        Painel contextual (backlinks/propriedades — Fase 7)
+      <aside v-if="isRightPanelOpen" class="w-64 shrink-0 overflow-hidden border-l">
+        <NoteContextPanel />
       </aside>
     </div>
 
@@ -185,7 +183,7 @@ const {
           >
         </SheetHeader>
         <div class="h-full overflow-hidden">
-          <FileTree />
+          <FileNavigator />
         </div>
       </SheetContent>
     </Sheet>
@@ -198,8 +196,8 @@ const {
             Backlinks e propriedades da nota atual
           </SheetDescription>
         </SheetHeader>
-        <div class="p-4 text-sm text-muted-foreground">
-          Backlinks/propriedades — Fase 7
+        <div class="h-full overflow-hidden">
+          <NoteContextPanel />
         </div>
       </SheetContent>
     </Sheet>

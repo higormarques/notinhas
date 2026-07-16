@@ -332,13 +332,70 @@ teclado.
 _Pronto quando:_ busca retorna resultados corretos num workspace fixture; fluxo atalho → digitar
 → setas → Enter abre a nota, tudo por teclado. ✅
 
-## Fase 7 — Organização: tags, doclinks, propriedades — ⬜ não iniciada
+## Fase 7 — Organização: tags, doclinks, propriedades — ✅ concluída
 
 Parsing de `#tag` inline + painel de tags. `[[links]]` entre notas com autocomplete e painel de
 backlinks. Propriedades mínimas (frontmatter: criado/atualizado, chave-valor customizada).
 
+- [x] Entidades puras novas (`src/entities/`, zero IO, mesmo padrão de `DailyNote.ts`):
+      `markdownText.ts` (`stripCode`, usado por Tag/DocLink para não capturar `#`/`[[` dentro de
+      código), `Tag.ts` (`extractTags`/`uniqueTagNames`, regex que exclui headings ATX — exige
+      espaço nulo logo após `#` — e `foo#tag`/`##tag`), `DocLink.ts` (`extractDocLinks`/
+      `docLinkTargets`/`resolveDocLinkTarget`, resolução case-insensitive via mapa título→path
+      fornecido pelo caller; `unescapeDocLinkMarkdown` desfaz o backslash-escape de colchetes
+      duplos que `@tiptap/markdown` aplica a texto plano — sem isso `[[Nota]]` não sobrevivia ao
+      autosave), `Frontmatter.ts` (`parseFrontmatter`/`serializeNote`/`stampTimestamps`, parser
+      linha-a-linha sem lib de YAML, escopo mínimo)
+- [x] `shared/search/searchIndex.ts` estendido em vez de um 3º mecanismo de indexação (ADR 0006):
+      `SearchIndexEntry` ganhou `tags`/`links`, computados a partir do corpo (frontmatter já
+      removido) em `rebuildIndex`/`upsertEntry`; novas queries `listTagsWithCounts`/
+      `notesForTag`/`buildTitleIndex`/`notesLinkingTo` — esta última resolve `[[link]]` contra o
+      título **atual** de cada nota a cada chamada, não um path guardado no momento da indexação
+- [x] `useNoteEditor.ts`: frontmatter separado do corpo antes de entrar no Tiptap
+      (`parseFrontmatter` no watcher de `fileQuery.data`) e recomposto no autosave
+      (`serializeNote`+`stampTimestamps` em `flushAutosave`) — `atualizado` sempre re-carimbado,
+      `criado` só na primeira vez; duas novas extensões Tiptap somente-decoração no molde do
+      `FindInNote` (Fase 4): `tagHighlightExtension.ts` (`#tag`, visual) e `docLinkExtension.ts`
+      (`[[link]]` resolvido/não-resolvido, `handleClick` navega em link resolvido, comando
+      `followDocLinkAtCursor` vinculado a `Mod-Enter` como equivalente por teclado do clique) +
+      autocomplete via `@tiptap/suggestion` nova dependência (`docLinkSuggestionPopup.ts`, popup
+      DOM puro posicionado por `props.mount`, já usa `@floating-ui/dom` internamente)
+- [x] Bugs reais encontrados só ao exercitar o fluxo ponta a ponta (não pegos pelos testes
+      unitários isolados): (1) `getSuggestions` precisou virar assíncrona — na primeira vez que o
+      usuário digita `[[` numa sessão, o índice ainda não estava construído, mostrando sempre
+      lista vazia; (2) título de uma palavra só (sem espaço) fazia o popup de autocomplete não
+      fechar depois de selecionar, porque o texto recém-inserido continuava batendo com o padrão
+      de gatilho do `@tiptap/suggestion` — corrigido chamando `exitSuggestion` explicitamente
+      depois de inserir; (3) a nota ativa aparecia na sua própria lista de sugestões — excluída
+      via path na filtragem; (4) `useTagsPanel.ts`/`useBacklinksPanel.ts` não inicializavam o
+      roving-tabindex no mount (`watch(..., {immediate: true})` faltando), deixando a lista
+      inteira com `tabindex="-1"` e inalcançável só por Tab até o primeiro clique
+- [x] Features novas, todas View+Composable colocado: `file-navigator` (wrapper fino, Tabs
+      "Arquivos"/"Tags" compondo `FileTree` inalterado + `TagsPanel` novo), `tags-panel` (lista
+      de tags com contagem, Enter filtra notas com aquela tag, Escape volta), `note-context-panel`
+      (wrapper fino espelhando `file-navigator`, Tabs "Backlinks"/"Propriedades"),
+      `backlinks-panel` (`notesLinkingTo` reativo — `entries` é `reactive(Map)` do módulo, mesmo
+      padrão de `useSearch.ts`), `note-properties` (ciclo de leitura/escrita independente do
+      note-editor sobre a mesma query key `['file', path]`, reconciliado via
+      `invalidateQueries` — sem lock entre os dois, ver ADR 0006)
+- [x] Componente `Badge` adicionado via CLI shadcn-vue (chips de tag); `Tabs` (já presente desde a
+      Fase 0, sem consumidor até agora) confirmado com navegação por teclado completa via Reka UI
+      sem wiring extra
+- [x] `AppShell.vue`: `<FileTree/>` → `<FileNavigator/>` e o placeholder "Painel contextual
+      (backlinks/propriedades — Fase 7)" → `<NoteContextPanel/>`, nos 3 breakpoints
+- [x] ADR 0006 — reaproveitamento do índice de busca para tags/links + estratégia de frontmatter
+      (strip antes do editor, reassemble no autosave, reconciliação via `invalidateQueries`),
+      documentando as limitações aceitas: colisão de título "último ganha", rename não reescreve
+      links antigos (viram não-resolvidos), `criado` não é a data real do arquivo no SO, sem lock
+      entre editor e painel de propriedades
+- [x] `e2e/tags.spec.ts`, `e2e/doclinks.spec.ts`, `e2e/note-properties.spec.ts` novos — fluxos
+      só de teclado, checagem `@axe-core/playwright`, nos 3 breakpoints; `e2e/shell.spec.ts`
+      atualizado para a nova estrutura de abas do painel direito
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e` passando (180 testes unitários,
+      144 testes e2e)
+
 _Pronto quando:_ notas linkadas mostram backlinks corretamente; filtro por tag funciona; criação
-de link via autocomplete só por teclado.
+de link via autocomplete só por teclado. ✅
 
 ## Fase 8 — Polimento MVP e checklist de release — ⬜ não iniciada
 

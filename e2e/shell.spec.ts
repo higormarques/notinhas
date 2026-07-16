@@ -12,9 +12,8 @@ test('shell collapses correctly for the current breakpoint', async ({
   if (testInfo.project.name === 'desktop') {
     await expect(page.getByText(emptyTree)).toBeVisible()
     await expect(page.getByText('Selecione uma nota para editar.')).toBeVisible()
-    await expect(
-      page.getByText('Painel contextual (backlinks/propriedades — Fase 7)'),
-    ).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Backlinks' })).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Propriedades' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Alternar navegação' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Abrir navegação' })).toHaveCount(0)
   }
