@@ -150,6 +150,25 @@ describe('useNoteEditor', () => {
     expect(result.editor.value?.getText()).toBe('conteudo inicial')
   })
 
+  it('makes the help note read-only and never writes edits back, even from a programmatic command', async () => {
+    adapter = createFakeAdapter({ 'Guia do notinhas.md': 'conteúdo original do guia' })
+    vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
+    useNotesStore().openNote('Guia do notinhas.md')
+    const { result } = mountComposable()
+    await flushPromises()
+
+    expect(result.isReadOnly.value).toBe(true)
+    expect(result.editor.value?.isEditable).toBe(false)
+
+    // Uma toolbar escondida não impede um comando disparado programaticamente — o guard em
+    // `onUpdate` (não em `editable`) é a defesa real contra escrever de volta.
+    result.editor.value?.commands.setContent('tentativa de edição')
+    await vi.advanceTimersByTimeAsync(700)
+    await flushPromises()
+
+    expect(adapter.writeFile).not.toHaveBeenCalled()
+  })
+
   describe('frontmatter', () => {
     it('strips a leading frontmatter block before loading content into the editor', async () => {
       adapter = createFakeAdapter({

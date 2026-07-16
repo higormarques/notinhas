@@ -5,6 +5,7 @@ import type { DirectoryEntry } from '@/shared/storage/StorageAdapter'
 import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
 import { useNotesStore } from '@/shared/stores/notes'
 import { DAILY_DIRECTORY } from '@/entities/DailyNote'
+import { HELP_NOTE_PATH } from '@/entities/HelpNote'
 
 export interface FileTreeRow {
   entry: DirectoryEntry
@@ -72,10 +73,18 @@ export function useFileTree() {
   })
 
   function isHiddenRootEntry(path: string, entry: DirectoryEntry): boolean {
+    if (path !== '') return false
     // A pasta Daily/ é navegada pelo Daily Desk e pela paleta de comandos ("ir para data"), não
     // pela árvore de arquivos — escondida aqui em vez de filtrada no StorageAdapter para não
     // afetar outros consumidores da mesma listagem (ex.: notes-index da paleta).
-    return path === '' && entry.kind === 'directory' && entry.name === DAILY_DIRECTORY
+    if (entry.kind === 'directory' && entry.name === DAILY_DIRECTORY) return true
+    // A nota de ajuda pertence ao core do app (conteúdo embutido no bundle, ver
+    // `entities/HelpNote.ts`) — escondida da árvore pelo mesmo motivo, e isso também é o que a
+    // torna impossível de renomear/apagar pela UI (a única ação de renomear/excluir do app é a
+    // da árvore de arquivos). Continua indexada normalmente pra busca/paleta, como uma nota
+    // diária qualquer.
+    if (entry.kind === 'file' && entry.name === HELP_NOTE_PATH) return true
+    return false
   }
 
   const entriesByPath = computed(() => {

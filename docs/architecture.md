@@ -281,6 +281,33 @@ sempre responsabilidade do cache do TanStack Query.
     mover uma pasta com notas abertas em abas de fundo (não a ativa) precisa fechar/remapear
     essas abas também, senão ficam apontando pra um arquivo que não existe mais — ver
     `remapExpandedAndOpenTabs`/`confirmDelete`.
+- `help` (`src/features/help/helpNoteWriter.ts`, revisado depois da Fase 7) — sem componente
+  `.vue` próprio; só um módulo plano (mesmo padrão de `dailyNoteWriter.ts`) chamado pelo botão
+  "Abrir guia de uso" do `AppShell`, via `useAppShell.ts` (única composable do `AppShell.vue`,
+  então a lógica de criar/abrir a nota vive ali, não num composable novo sem `.vue` que o chame).
+  `openOrCreateHelpNote()` importa `docs/guia-do-usuario.md` no bundle via `?raw` (suportado
+  nativamente pelos tipos do Vite) e escreve esse conteúdo em `Guia do notinhas.md`
+  (`entities/HelpNote.ts`) na raiz do workspace só se o arquivo ainda não existir. Abrir sempre
+  passa por `notesStore.openNote(path)`, então a nota aparece como qualquer outra aba
+  (`note-tabs`) — mas, diferente de uma nota comum, ela pertence ao "core" do app:
+  - **Escondida da árvore de arquivos**: `useFileTree.ts` filtra `HELP_NOTE_PATH` na raiz junto
+    com `DAILY_DIRECTORY` (mesmo `isHiddenRootEntry`). Como renomear/apagar só existem como ação
+    da árvore, ficar fora dela já torna a nota impossível de renomear/apagar pela UI — nenhuma
+    lógica extra de "proteção contra exclusão" precisou ser escrita. Continua indexada
+    normalmente pra busca/paleta, como uma nota diária qualquer.
+  - **Somente leitura**: `useNoteEditor.ts` compara `activeNotePath` com `HELP_NOTE_PATH`
+    (`isReadOnly`) em dois pontos independentes, porque `editor.setEditable(false)` sozinho não
+    basta — ele bloqueia entrada via teclado/mouse (o `contenteditable` do DOM), mas comandos
+    disparados programaticamente (`editor.commands.toggleBold()` etc., como os da toolbar) ainda
+    conseguem mutar o documento mesmo com o editor não-editável. Por isso: (1) `onUpdate` só
+    agenda autosave quando `path !== HELP_NOTE_PATH`, e (2) `NoteEditor.vue` esconde a toolbar
+    inteira (`v-if="!isReadOnly"`) em vez de tentar desabilitar botão por botão. O
+    `editor.setEditable(...)` em si vive num `watchEffect` separado do `watch(activeNotePath,
+    ...)` de troca de nota — `useEditor()` só cria a instância dentro de `onMounted`, então um
+    `watch` comum com `immediate: true` perderia a primeira chamada (com `editor.value` ainda
+    `undefined`) se a nota de ajuda já for a nota ativa no momento em que o editor monta;
+    `watchEffect` reconecta a dependência em `editor.value` e roda de novo assim que a instância
+    existe.
 
 ## Testes
 

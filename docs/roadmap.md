@@ -442,6 +442,19 @@ do MVP já entregue — não consta no `PLANO.md` original, documentada em ADR 0
 - `e2e/note-tabs.spec.ts` novo — abrir notas em abas distintas, alternar só de teclado (seta move
   foco sem ativar, Enter ativa), fechar com Delete e cair na aba vizinha, fechar a última aba e
   voltar ao estado vazio, checagem `@axe-core/playwright`, nos 3 breakpoints.
+- Guia do usuário: `docs/guia-do-usuario.md` novo (instruções de uso + detalhamento de cada
+  feature entregue) e botão "Abrir guia de uso" (ícone `CircleHelp`) no cabeçalho, entre "Abrir
+  paleta de comandos" e "Alternar tema". `src/features/help/helpNoteWriter.ts` (módulo plano, sem
+  composable — mesmo padrão de `daily-desk/dailyNoteWriter.ts`) embute o conteúdo do guia no
+  bundle via `?raw` e cria a nota `Guia do notinhas.md` (`entities/HelpNote.ts`) na raiz do
+  workspace só na primeira vez; `useAppShell.ts` abre essa nota como qualquer outra via
+  `notesStore.openNote`, reaproveitando o sistema de abas sem nenhum conceito novo de "nota
+  virtual" — é um arquivo `.md` real. Diferente de uma nota comum, porém, ela pertence ao core do
+  app: escondida da árvore de arquivos (`useFileTree.ts`, mesmo filtro de `Daily/`) — o que
+  também a torna impossível de renomear/apagar pela UI, já que essas ações só existem na árvore —
+  e somente leitura (`useNoteEditor.ts`: `editable: false` via `watchEffect` + toolbar escondida
+  em `NoteEditor.vue` + autosave desativado especificamente pra esse path, já que comandos
+  programáticos ainda conseguem mutar um editor Tiptap não-editável).
 
 ## Fase 8 — Polimento MVP e checklist de release — ⬜ não iniciada
 

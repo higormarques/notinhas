@@ -1,10 +1,13 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useBreakpoint } from '@/shared/composables/useBreakpoint'
 import { useShortcuts } from '@/shared/composables/useShortcuts'
 import { useTheme } from '@/shared/composables/useTheme'
+import { useNotesStore } from '@/shared/stores/notes'
 import { useUiStore } from '@/shared/stores/ui'
 import { useWorkspaceStore } from '@/shared/stores/workspace'
+import { openOrCreateHelpNote } from '@/features/help/helpNoteWriter'
 
 export function useAppShell() {
   const { breakpoint } = useBreakpoint()
@@ -15,6 +18,8 @@ export function useAppShell() {
     storeToRefs(uiStore)
   const workspaceStore = useWorkspaceStore()
   const { status: workspaceStatus, workspace } = storeToRefs(workspaceStore)
+  const notesStore = useNotesStore()
+  const queryClient = useQueryClient()
 
   const isWorkspaceConnected = computed(() => workspaceStatus.value === 'connected')
   const isOpfsFallback = computed(() => workspace.value?.adapterKind === 'opfs')
@@ -49,10 +54,25 @@ export function useAppShell() {
     trigger('search:open')
   }
 
+  const openHelpGuideMutation = useMutation({
+    mutationFn: openOrCreateHelpNote,
+    onSuccess: async (path) => {
+      // A raiz precisa ser invalidada pra árvore de arquivos descobrir a nota de ajuda na
+      // primeira vez que ela é criada — mesmo padrão de `useDailyDesk.ts` pra `Daily/`.
+      await queryClient.invalidateQueries({ queryKey: ['directory', ''] })
+      notesStore.openNote(path)
+    },
+  })
+
+  function openHelpGuide() {
+    void openHelpGuideMutation.mutateAsync()
+  }
+
   return {
     openCommandPalette,
     openDailyDesk,
     openSearch,
+    openHelpGuide,
     breakpoint,
     theme,
     toggleTheme,

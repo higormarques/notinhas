@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   CalendarDays,
+  CircleHelp,
   FileSearch,
   Menu,
   PanelRight,
@@ -48,6 +49,7 @@ const {
   openCommandPalette,
   openDailyDesk,
   openSearch,
+  openHelpGuide,
 } = useAppShell()
 </script>
 
@@ -130,6 +132,14 @@ const {
           @click="openCommandPalette"
         >
           <Search class="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Abrir guia de uso"
+          @click="openHelpGuide"
+        >
+          <CircleHelp class="size-4" />
         </Button>
         <Button
           variant="ghost"

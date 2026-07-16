@@ -246,6 +246,42 @@ describe('useFileTree', () => {
     ])
   })
 
+  it('hides the help note from the root listing', async () => {
+    await adapter.writeFile('bemvindo.md', 'ola')
+    await adapter.writeFile('Guia do notinhas.md', 'conteúdo do guia')
+
+    const result = mountComposable()
+    await flushPromises()
+
+    expect(result.rows.value).toEqual([
+      {
+        entry: { name: 'bemvindo.md', path: 'bemvindo.md', kind: 'file' },
+        depth: 0,
+        isExpanded: false,
+        displayName: 'bemvindo',
+      },
+    ])
+  })
+
+  it('does not hide a nested note that happens to be named like the help note', async () => {
+    await adapter.createDirectory('Notas')
+    await adapter.writeFile('Notas/Guia do notinhas.md', '')
+
+    const result = mountComposable()
+    await flushPromises()
+
+    result.focusedPath.value = 'Notas'
+    result.handleTreeKeydown({
+      key: 'ArrowRight',
+      preventDefault: () => {},
+    } as KeyboardEvent)
+    await flushPromises()
+
+    expect(result.rows.value.map((row) => row.entry.path)).toContain(
+      'Notas/Guia do notinhas.md',
+    )
+  })
+
   it('does not hide a nested folder that happens to be named Daily', async () => {
     await adapter.createDirectory('Notas')
     await adapter.writeFile('Notas/Daily/README.md', '')

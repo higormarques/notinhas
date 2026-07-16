@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { useEditor } from '@tiptap/vue-3'
@@ -13,6 +13,7 @@ import { useNotesStore } from '@/shared/stores/notes'
 import { useShortcuts } from '@/shared/composables/useShortcuts'
 import { parseFrontmatter, serializeNote, stampTimestamps, type Frontmatter } from '@/entities/Frontmatter'
 import { resolveDocLinkTarget, unescapeDocLinkMarkdown } from '@/entities/DocLink'
+import { HELP_NOTE_PATH } from '@/entities/HelpNote'
 import { buildTitleIndex, ensureIndexReady, titleFromPath } from '@/shared/search/searchIndex'
 import { FindInNote } from './findInNoteExtension'
 import { TagHighlight } from './tagHighlightExtension'
@@ -152,7 +153,10 @@ export function useNoteEditor() {
       // para que `[[Nota]]` sobreviva ao autosave como texto literal (ver `DocLink.ts`).
       const value = unescapeDocLinkMarkdown(instance.getMarkdown())
       content.value = value
-      if (path) scheduleAutosave(path, value)
+      // A nota de ajuda nunca é salva de volta — `editable: false` (ver `watch(activeNotePath,
+      // ...)` abaixo) já bloqueia edição via teclado/mouse, isto aqui é defesa extra contra
+      // qualquer comando disparado programaticamente (a toolbar já fica escondida pra ela).
+      if (path && path !== HELP_NOTE_PATH) scheduleAutosave(path, value)
     },
     onTransaction: () => {
       updateTick.value += 1
@@ -173,6 +177,18 @@ export function useNoteEditor() {
       suppressAutosave = false
       content.value = ''
     }
+  })
+
+  // Separado do watch acima (não pode reaproveitar o mesmo callback): `useEditor()` só cria a
+  // instância dentro de `onMounted`, então no primeiro disparo (síncrono, durante o setup)
+  // `editor.value` ainda é `undefined` — um `watch(activeNotePath, ..., { immediate: true })`
+  // perderia esse primeiro `setEditable` silenciosamente. `watchEffect` reconecta as duas
+  // dependências (`editor.value` e `activeNotePath.value`) e roda de novo assim que o editor
+  // fica disponível, cobrindo tanto "nota de ajuda já ativa no mount" quanto trocas de nota
+  // subsequentes. A nota de ajuda pertence ao core do app — fica read-only, sem depender só da
+  // toolbar escondida (ver `NoteEditor.vue`) pra impedir edição.
+  watchEffect(() => {
+    editor.value?.setEditable(activeNotePath.value !== HELP_NOTE_PATH, false)
   })
 
   watch(
@@ -311,6 +327,7 @@ export function useNoteEditor() {
   const noteName = computed(() => activeNotePath.value?.split('/').pop() ?? '')
   const isEmptyState = computed(() => activeNotePath.value === null)
   const isLoading = computed(() => fileQuery.isLoading.value)
+  const isReadOnly = computed(() => activeNotePath.value === HELP_NOTE_PATH)
 
   return {
     editor,
@@ -318,6 +335,7 @@ export function useNoteEditor() {
     noteName,
     isEmptyState,
     isLoading,
+    isReadOnly,
     isBoldActive,
     isItalicActive,
     isStrikeActive,

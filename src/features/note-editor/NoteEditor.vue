@@ -31,6 +31,7 @@ const {
   noteName,
   isEmptyState,
   isLoading,
+  isReadOnly,
   isBoldActive,
   isItalicActive,
   isStrikeActive,
@@ -77,13 +78,18 @@ const {
       <div class="flex shrink-0 items-center justify-between px-1">
         <h2 class="truncate text-sm font-medium">{{ noteName }}</h2>
         <span class="text-xs text-muted-foreground" aria-live="polite">
-          <template v-if="saveStatus === 'saving'">Salvando…</template>
+          <template v-if="isReadOnly">Nota protegida — somente leitura</template>
+          <template v-else-if="saveStatus === 'saving'">Salvando…</template>
           <template v-else-if="saveStatus === 'saved'">Salvo</template>
           <template v-else-if="saveStatus === 'error'">Erro ao salvar</template>
         </span>
       </div>
 
-      <div class="flex shrink-0 flex-wrap items-center gap-1 border-b pb-2" role="toolbar">
+      <div
+        v-if="!isReadOnly"
+        class="flex shrink-0 flex-wrap items-center gap-1 border-b pb-2"
+        role="toolbar"
+      >
         <Button
           variant="ghost"
           size="icon"
