@@ -51,7 +51,7 @@ function displayNameFor(entry: DirectoryEntry): string {
 
 export function useFileTree() {
   const notesStore = useNotesStore()
-  const { activeNotePath } = storeToRefs(notesStore)
+  const { openTabs } = storeToRefs(notesStore)
   const queryClient = useQueryClient()
 
   const expandedPaths = ref<Set<string>>(new Set(['']))
@@ -96,7 +96,12 @@ export function useFileTree() {
       return entries.flatMap((entry) => {
         const isExpanded =
           entry.kind === 'directory' && expandedPaths.value.has(entry.path)
-        const row: FileTreeRow = { entry, depth, isExpanded, displayName: displayNameFor(entry) }
+        const row: FileTreeRow = {
+          entry,
+          depth,
+          isExpanded,
+          displayName: displayNameFor(entry),
+        }
         return isExpanded ? [row, ...walk(entry.path, depth + 1)] : [row]
       })
     }
@@ -263,15 +268,20 @@ export function useFileTree() {
     }
   }
 
-  function remapExpandedAndActive(fromPath: string, toPath: string) {
+  function remapExpandedAndOpenTabs(fromPath: string, toPath: string) {
     const next = new Set<string>()
     for (const path of expandedPaths.value) {
       next.add(isWithin(path, fromPath) ? remapPath(path, fromPath, toPath) : path)
     }
     expandedPaths.value = next
 
-    if (activeNotePath.value && isWithin(activeNotePath.value, fromPath)) {
-      notesStore.openNote(remapPath(activeNotePath.value, fromPath, toPath))
+    // Nem só a nota ativa: qualquer aba aberta em segundo plano dentro do caminho movido
+    // também precisa apontar pro novo caminho, senão ela passa a referenciar um arquivo que
+    // não existe mais.
+    for (const path of [...openTabs.value]) {
+      if (isWithin(path, fromPath)) {
+        notesStore.renameTab(path, remapPath(path, fromPath, toPath))
+      }
     }
   }
 
@@ -281,7 +291,7 @@ export function useFileTree() {
       queryClient.invalidateQueries({ queryKey: ['directory', parentOf(fromPath)] }),
       queryClient.invalidateQueries({ queryKey: ['directory', parentOf(toPath)] }),
     ])
-    remapExpandedAndActive(fromPath, toPath)
+    remapExpandedAndOpenTabs(fromPath, toPath)
   }
 
   async function submitRename() {
@@ -388,8 +398,12 @@ export function useFileTree() {
       }
       expandedPaths.value = next
 
-      if (activeNotePath.value && isWithin(activeNotePath.value, path)) {
-        notesStore.closeActiveNote()
+      // Fecha toda aba aberta dentro da pasta/arquivo apagado, não só a nota ativa — uma aba em
+      // segundo plano também ficaria apontando pra um arquivo que não existe mais.
+      for (const openPath of [...openTabs.value]) {
+        if (isWithin(openPath, path)) {
+          notesStore.closeTab(openPath)
+        }
       }
       closeDialog()
     } catch {

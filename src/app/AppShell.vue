@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { CalendarDays, FileSearch, Menu, PanelRight, Moon, Search, Sun, TriangleAlert } from '@lucide/vue'
+import {
+  CalendarDays,
+  FileSearch,
+  Menu,
+  PanelRight,
+  Moon,
+  Search,
+  Sun,
+  TriangleAlert,
+} from '@lucide/vue'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import {
@@ -19,6 +28,7 @@ import DailyDesk from '@/features/daily-desk/DailyDesk.vue'
 import FileNavigator from '@/features/file-navigator/FileNavigator.vue'
 import NoteContextPanel from '@/features/note-context-panel/NoteContextPanel.vue'
 import NoteEditor from '@/features/note-editor/NoteEditor.vue'
+import NoteTabs from '@/features/note-tabs/NoteTabs.vue'
 import SearchDialog from '@/features/search/Search.vue'
 import WorkspaceConnect from '@/features/workspace-connect/WorkspaceConnect.vue'
 import { useAppShell } from './useAppShell'
@@ -148,8 +158,11 @@ const {
       </ResizablePanel>
       <ResizableHandle with-handle />
       <ResizablePanel :default-size="55" :min-size="30">
-        <div class="h-full overflow-hidden">
-          <NoteEditor />
+        <div class="flex h-full flex-col overflow-hidden">
+          <NoteTabs />
+          <div class="min-h-0 flex-1 overflow-hidden">
+            <NoteEditor />
+          </div>
         </div>
       </ResizablePanel>
       <ResizableHandle with-handle />
@@ -161,22 +174,31 @@ const {
     </ResizablePanelGroup>
 
     <div v-else-if="breakpoint === 'tablet'" class="flex flex-1 overflow-hidden">
-      <aside v-if="isLeftPanelOpen" class="flex w-56 shrink-0 flex-col overflow-hidden border-r">
+      <aside
+        v-if="isLeftPanelOpen"
+        class="flex w-56 shrink-0 flex-col overflow-hidden border-r"
+      >
         <div class="min-h-0 flex-1 overflow-hidden">
           <FileNavigator />
         </div>
         <DailyDesk />
       </aside>
-      <main class="flex-1 overflow-hidden">
-        <NoteEditor />
+      <main class="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <NoteTabs />
+        <div class="min-h-0 flex-1 overflow-hidden">
+          <NoteEditor />
+        </div>
       </main>
       <aside v-if="isRightPanelOpen" class="w-64 shrink-0 overflow-hidden border-l">
         <NoteContextPanel />
       </aside>
     </div>
 
-    <main v-else class="flex-1 overflow-hidden">
-      <NoteEditor />
+    <main v-else class="flex flex-1 flex-col overflow-hidden">
+      <NoteTabs />
+      <div class="min-h-0 flex-1 overflow-hidden">
+        <NoteEditor />
+      </div>
     </main>
 
     <Sheet v-model:open="isLeftSheetOpen">

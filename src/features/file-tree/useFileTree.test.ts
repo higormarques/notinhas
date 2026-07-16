@@ -143,7 +143,10 @@ describe('useFileTree', () => {
     await flushPromises()
 
     result.focusedPath.value = 'Notas'
-    result.handleTreeKeydown({ key: 'ArrowRight', preventDefault: () => {} } as KeyboardEvent)
+    result.handleTreeKeydown({
+      key: 'ArrowRight',
+      preventDefault: () => {},
+    } as KeyboardEvent)
     await flushPromises()
 
     result.openCreateNoteDialog()
@@ -251,7 +254,10 @@ describe('useFileTree', () => {
     await flushPromises()
 
     result.focusedPath.value = 'Notas'
-    result.handleTreeKeydown({ key: 'ArrowRight', preventDefault: () => {} } as KeyboardEvent)
+    result.handleTreeKeydown({
+      key: 'ArrowRight',
+      preventDefault: () => {},
+    } as KeyboardEvent)
     await flushPromises()
 
     expect(result.rows.value.map((row) => row.entry.path)).toContain('Notas/Daily')
@@ -320,7 +326,10 @@ describe('useFileTree', () => {
     const result = mountComposable()
     await flushPromises()
     result.focusedPath.value = 'Pasta'
-    result.handleTreeKeydown({ key: 'ArrowRight', preventDefault: () => {} } as KeyboardEvent)
+    result.handleTreeKeydown({
+      key: 'ArrowRight',
+      preventDefault: () => {},
+    } as KeyboardEvent)
     await flushPromises()
 
     result.handleDragStart('Pasta/nota.md')
@@ -340,7 +349,10 @@ describe('useFileTree', () => {
     const result = mountComposable()
     await flushPromises()
     result.focusedPath.value = 'Pasta'
-    result.handleTreeKeydown({ key: 'ArrowRight', preventDefault: () => {} } as KeyboardEvent)
+    result.handleTreeKeydown({
+      key: 'ArrowRight',
+      preventDefault: () => {},
+    } as KeyboardEvent)
     await flushPromises()
 
     const selfRow = result.rows.value.find((row) => row.entry.path === 'Pasta')!

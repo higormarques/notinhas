@@ -116,7 +116,7 @@ ver "Camada de storage" acima) em vez de por invalidação de query key espalhad
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `useUiStore` (`shared/stores/ui.ts`)               | painéis abertos (esquerdo/direito) em breakpoints tablet/desktop. Já implementado na Fase 0.                                                                                                                                              |
 | `useWorkspaceStore` (chega na Fase 1)              | workspace ativo (referência ao handle/adapter escolhido), estado de conexão/permissão.                                                                                                                                                    |
-| `useNotesStore` (`shared/stores/notes.ts`, Fase 2) | nota ativa (`activeNotePath`) — compartilhada entre `file-tree` (abre/fecha) e `note-editor` (lê); nunca guarda conteúdo de arquivo, só o caminho.                                                                                        |
+| `useNotesStore` (`shared/stores/notes.ts`, Fase 2; abas — ADR 0007) | `openTabs` (paths das notas abertas, na ordem em que foram abertas) + `activeNotePath` (qual delas está visível) — compartilhada entre `file-tree`/`daily-desk`/`command-palette`/`search`/`tags-panel`/`backlinks-panel`/`docLinkExtension` (abrem via `openNote`, que adiciona a aba se ainda não existir e sempre foca) e `note-tabs`/`note-editor` (leem/fecham/renomeiam abas); nunca guarda conteúdo de arquivo, só os caminhos. |
 | `useThemeStore`/`useTheme` composable              | tema claro/escuro — hoje é um composable simples (`shared/composables/useTheme.ts`) com estado em módulo + persistência em `localStorage`; só vira store Pinia se precisar ser injetado em múltiplos contextos de teste de forma isolada. |
 
 Nenhuma store guarda conteúdo de arquivo, resultado de busca ou árvore de diretórios — isso é
@@ -260,6 +260,27 @@ sempre responsabilidade do cache do TanStack Query.
     atualiza sozinha conforme o progresso, sem bloquear a abertura do diálogo.
   - `useCommandPalette.ts` ganhou "Buscar em notas" no grupo "Aplicativo" (aciona
     `trigger('search:open')`, mesmo padrão de "Ir para Daily Desk").
+- `note-tabs` (`src/features/note-tabs/`, revisado depois da Fase 7 — ADR 0007) — tira de abas
+  renderizada acima do `NoteEditor` nos 3 breakpoints, uma aba por nota aberta
+  (`notesStore.openTabs`):
+  - **Roving tabindex igual ao `file-tree`, não o componente `Tabs` (shadcn-vue/Reka UI)**: o
+    componente pronto não tem como acomodar um botão de fechar por aba sem violar seu próprio
+    modelo de foco (ativação automática ao mover seta). As abas de notas usam `role="tablist"`/
+    `role="tab"` cru com um único `tabindex="0"` por vez: `ArrowLeft`/`ArrowRight` só move o
+    foco, `Enter`/`Espaço` ativa a aba focada, `Delete`/`Backspace` fecha a aba focada — sem
+    diálogo de confirmação, já que fechar uma aba não toca no arquivo em disco.
+  - **`aria-label` explícito no `div[role=tab]`**: sem isso, o botão "Fechar" aninhado (com seu
+    próprio `aria-label`) entraria no cálculo do nome acessível do próprio tab por conteúdo,
+    poluindo o texto exposto a leitor de tela/testes (`getByRole('tab', { name: ... })`).
+  - **`useNoteTabs.ts` sincroniza `focusedPath` com `notesStore.activeNotePath` via `watch`**:
+    abrir/ativar uma nota (de qualquer feature) move o cursor de teclado da tira de abas junto;
+    `focusedPath` só diverge de `activeNotePath` no intervalo entre mover o foco com a seta e
+    ativar com Enter — o watcher não dispara nesse meio-tempo porque `activeNotePath` ainda não
+    mudou.
+  - **`file-tree/useFileTree.ts` fecha/remapeia toda aba afetada, não só a ativa**: apagar ou
+    mover uma pasta com notas abertas em abas de fundo (não a ativa) precisa fechar/remapear
+    essas abas também, senão ficam apontando pra um arquivo que não existe mais — ver
+    `remapExpandedAndOpenTabs`/`confirmDelete`.
 
 ## Testes
 

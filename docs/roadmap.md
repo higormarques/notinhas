@@ -423,6 +423,26 @@ backlinks. Propriedades mínimas (frontmatter: criado/atualizado, chave-valor cu
 _Pronto quando:_ notas linkadas mostram backlinks corretamente; filtro por tag funciona; criação
 de link via autocomplete só por teclado. ✅
 
+**Revisado depois da Fase 7** (fora de qualquer fase formal, feature pedida pelo usuário em cima
+do MVP já entregue — não consta no `PLANO.md` original, documentada em ADR 0007):
+
+- Abas de notas abertas: cada nota aberta (pela árvore, Daily Desk, paleta, busca, tags,
+  backlinks ou um `[[doclink]]`) ganha sua própria aba; só uma fica visível por vez.
+  `useNotesStore` ganhou `openTabs: string[]` além de `activeNotePath`; `openNote(path)` manteve
+  a mesma assinatura (assim nenhum dos 7 consumidores existentes precisou mudar) — passou a
+  adicionar a nota a `openTabs` (se ainda não estiver) e sempre focar essa aba. Funções novas:
+  `closeTab(path)` (fecha, reativa a aba vizinha), `renameTab(fromPath, toPath)` (usada pelo
+  `file-tree` ao mover/renomear um arquivo com aba aberta).
+- Feature nova `note-tabs` (`NoteTabs.vue` + `useNoteTabs.ts`), montada acima do `NoteEditor` nos
+  3 breakpoints: tira de abas com roving tabindex no mesmo padrão do `file-tree`
+  (`ArrowLeft`/`ArrowRight` move o foco, `Enter`/`Espaço` ativa, `Delete`/`Backspace` fecha, sem
+  diálogo de confirmação já que fechar não apaga o arquivo).
+- `file-tree/useFileTree.ts`: apagar/mover uma pasta agora fecha/remapeia **toda** aba aberta
+  dentro dela, não só a nota ativa (antes só `activeNotePath` era considerado).
+- `e2e/note-tabs.spec.ts` novo — abrir notas em abas distintas, alternar só de teclado (seta move
+  foco sem ativar, Enter ativa), fechar com Delete e cair na aba vizinha, fechar a última aba e
+  voltar ao estado vazio, checagem `@axe-core/playwright`, nos 3 breakpoints.
+
 ## Fase 8 — Polimento MVP e checklist de release — ⬜ não iniciada
 
 Passe completo de acessibilidade (axe-core zero violações críticas, roteiro de teclado cobrindo
