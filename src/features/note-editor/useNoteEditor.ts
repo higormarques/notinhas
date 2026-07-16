@@ -11,10 +11,19 @@ import { Markdown } from '@tiptap/markdown'
 import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
 import { useNotesStore } from '@/shared/stores/notes'
 import { useShortcuts } from '@/shared/composables/useShortcuts'
-import { parseFrontmatter, serializeNote, stampTimestamps, type Frontmatter } from '@/entities/Frontmatter'
+import {
+  parseFrontmatter,
+  serializeNote,
+  stampTimestamps,
+  type Frontmatter,
+} from '@/entities/Frontmatter'
 import { resolveDocLinkTarget, unescapeDocLinkMarkdown } from '@/entities/DocLink'
 import { HELP_NOTE_PATH } from '@/entities/HelpNote'
-import { buildTitleIndex, ensureIndexReady, titleFromPath } from '@/shared/search/searchIndex'
+import {
+  buildTitleIndex,
+  ensureIndexReady,
+  titleFromPath,
+} from '@/shared/search/searchIndex'
 import { FindInNote } from './findInNoteExtension'
 import { TagHighlight } from './tagHighlightExtension'
 import { DocLink } from './docLinkExtension'
@@ -123,7 +132,10 @@ export function useNoteEditor() {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ codeBlock: false, heading: { levels: [...HEADING_LEVELS] } }),
+      StarterKit.configure({
+        codeBlock: false,
+        heading: { levels: [...HEADING_LEVELS] },
+      }),
       CodeBlockLowlight.configure({ lowlight }),
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -198,7 +210,10 @@ export function useNoteEditor() {
       const { frontmatter: parsedFrontmatter, body } = parseFrontmatter(data)
       frontmatter.value = parsedFrontmatter
       suppressAutosave = true
-      editorInstance.commands.setContent(body, { contentType: 'markdown', emitUpdate: false })
+      editorInstance.commands.setContent(body, {
+        contentType: 'markdown',
+        emitUpdate: false,
+      })
       suppressAutosave = false
       content.value = body
       lastSavedContent = body
@@ -224,7 +239,11 @@ export function useNoteEditor() {
   const isTaskListActive = computed(() => isActive('taskList'))
   const activeHeadingLevel = computed(() => {
     void updateTick.value
-    return HEADING_LEVELS.find((level) => editor.value?.isActive('heading', { level }) ?? false) ?? null
+    return (
+      HEADING_LEVELS.find(
+        (level) => editor.value?.isActive('heading', { level }) ?? false,
+      ) ?? null
+    )
   })
   const canUndo = computed(() => {
     void updateTick.value
@@ -266,7 +285,11 @@ export function useNoteEditor() {
     editor.value?.chain().focus().toggleTaskList().run()
   }
   function insertTable() {
-    editor.value?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    editor.value
+      ?.chain()
+      .focus()
+      .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+      .run()
   }
   function undo() {
     editor.value?.chain().focus().undo().run()

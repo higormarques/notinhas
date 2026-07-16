@@ -5,7 +5,10 @@ import { useShortcuts } from '@/shared/composables/useShortcuts'
 import { useTheme } from '@/shared/composables/useTheme'
 import { useNotesStore } from '@/shared/stores/notes'
 import { parseSmartDate } from '@/entities/DailyNote'
-import { DAILY_DIRECTORY, openOrCreateDailyNote } from '@/features/daily-desk/dailyNoteWriter'
+import {
+  DAILY_DIRECTORY,
+  openOrCreateDailyNote,
+} from '@/features/daily-desk/dailyNoteWriter'
 
 interface NoteOption {
   path: string

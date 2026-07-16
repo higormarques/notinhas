@@ -58,7 +58,12 @@ describe('useShortcuts', () => {
   it('exposes registered shortcuts for future consumers (e.g. Settings)', () => {
     const { register, shortcuts } = useShortcuts()
 
-    register({ id: 'test:mod-k', keys: 'mod+k', description: 'Abrir paleta', handler: vi.fn() })
+    register({
+      id: 'test:mod-k',
+      keys: 'mod+k',
+      description: 'Abrir paleta',
+      handler: vi.fn(),
+    })
 
     expect(shortcuts.get('test:mod-k')?.description).toBe('Abrir paleta')
   })

@@ -104,7 +104,11 @@ export const DocLink = Extension.create<DocLinkOptions>({
         () =>
         ({ editor }) => {
           const { resolveTarget, onNavigate } = this.options
-          const path = resolveLinkAtPos(editor.state.doc, editor.state.selection.from, resolveTarget)
+          const path = resolveLinkAtPos(
+            editor.state.doc,
+            editor.state.selection.from,
+            resolveTarget,
+          )
           if (!path) return false
           onNavigate(path)
           return true
@@ -134,7 +138,9 @@ export const DocLink = Extension.create<DocLinkOptions>({
           return docLinkDecorationPluginKey.getState(state)
         },
         handleClick(_view, _pos, event) {
-          const element = (event.target as HTMLElement | null)?.closest('.note-doclink-resolved')
+          const element = (event.target as HTMLElement | null)?.closest(
+            '.note-doclink-resolved',
+          )
           const target = element?.getAttribute(DOC_LINK_TARGET_ATTR)
           if (!target) return false
           const path = resolveTarget(target)

@@ -25,7 +25,9 @@ async function openNote(page: Page, testInfo: TestInfo, name: string) {
       const items = Array.from(document.querySelectorAll('[role="treeitem"]'))
       return {
         currentIndex: items.indexOf(document.activeElement as Element),
-        targetIndex: items.findIndex((el) => el.getAttribute('data-tree-path') === targetPath),
+        targetIndex: items.findIndex(
+          (el) => el.getAttribute('data-tree-path') === targetPath,
+        ),
       }
     }, name)
     if (currentIndex === targetIndex) break
@@ -65,7 +67,9 @@ test('creates a [[link]] via keyboard-only autocomplete and it renders as resolv
 
   await expect(popup).toBeHidden()
   await expect(editorContent).toHaveText('veja [[Projeto X]]')
-  await expect(editorContent.locator('.note-doclink-resolved')).toHaveText('[[Projeto X]]')
+  await expect(editorContent.locator('.note-doclink-resolved')).toHaveText(
+    '[[Projeto X]]',
+  )
 })
 
 test('Escape cancels the autocomplete popup without inserting anything', async ({
@@ -101,11 +105,13 @@ test('a [[link]] with no matching note renders as unresolved and is a no-op', as
   await page.keyboard.type(']]')
 
   await expect(page.getByText('Salvo')).toBeVisible({ timeout: 3000 })
-  await expect(editorContent.locator('.note-doclink-unresolved')).toHaveText('[[Inexistente]]')
+  await expect(editorContent.locator('.note-doclink-unresolved')).toHaveText(
+    '[[Inexistente]]',
+  )
   await expect(editorContent.locator('.note-doclink-resolved')).toHaveCount(0)
 })
 
-test('the origin note appears in the target note\'s Backlinks tab, keyboard only', async ({
+test("the origin note appears in the target note's Backlinks tab, keyboard only", async ({
   page,
 }, testInfo) => {
   await connectMockWorkspace(page, 'meu-workspace', {
@@ -141,10 +147,14 @@ test('has no critical accessibility violations while the [[ autocomplete popup i
   await editorContent.waitFor()
   await editorContent.focus()
   await page.keyboard.type('[[')
-  await expect(page.getByRole('listbox', { name: 'Sugestões de notas para linkar' })).toBeVisible()
+  await expect(
+    page.getByRole('listbox', { name: 'Sugestões de notas para linkar' }),
+  ).toBeVisible()
 
   const results = await new AxeBuilder({ page }).analyze()
-  const critical = results.violations.filter((violation) => violation.impact === 'critical')
+  const critical = results.violations.filter(
+    (violation) => violation.impact === 'critical',
+  )
 
   expect(critical).toEqual([])
 })

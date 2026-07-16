@@ -216,7 +216,12 @@ const {
 
         <div class="mx-1 h-5 w-px bg-border" />
 
-        <Button variant="ghost" size="icon" aria-label="Inserir tabela" @click="insertTable">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Inserir tabela"
+          @click="insertTable"
+        >
           <Table2 class="size-4" />
         </Button>
 
@@ -242,7 +247,11 @@ const {
           @keydown.escape.prevent="closeFind"
         />
         <span class="whitespace-nowrap text-xs text-muted-foreground" aria-live="polite">
-          {{ findMatchCount > 0 ? `${findActiveIndex + 1}/${findMatchCount}` : 'Nenhum resultado' }}
+          {{
+            findMatchCount > 0
+              ? `${findActiveIndex + 1}/${findMatchCount}`
+              : 'Nenhum resultado'
+          }}
         </span>
         <Button
           variant="ghost"

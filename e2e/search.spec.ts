@@ -12,7 +12,11 @@ async function openSearchViaShortcut(page: Page) {
  * dia pré-selecionado) — a primeira seta já move o destaque para o primeiro item da coleção.
  * Repete `ArrowDown` até o item alvo ficar destacado em vez de assumir um número fixo de
  * pressionamentos, o que manteria o teste frágil a mudanças na ordem dos itens. */
-async function pressArrowDownUntilHighlighted(page: Page, target: Locator, maxPresses = 10) {
+async function pressArrowDownUntilHighlighted(
+  page: Page,
+  target: Locator,
+  maxPresses = 10,
+) {
   for (let i = 0; i < maxPresses; i += 1) {
     if ((await target.getAttribute('data-highlighted')) !== null) return
     await page.keyboard.press('ArrowDown')
@@ -72,7 +76,9 @@ test('finds a daily note by content as well as a regular note', async ({ page })
   await pressArrowDownUntilHighlighted(page, result)
   await page.keyboard.press('Enter')
 
-  await expect(page.getByRole('heading', { name: '2026-07-15.md', level: 2 })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '2026-07-15.md', level: 2 }),
+  ).toBeVisible()
 })
 
 test('is reachable via the header button, the shortcut, and the command palette', async ({
@@ -106,7 +112,9 @@ test('closes with Escape without taking any action', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Buscar em notas' })).toBeHidden()
 })
 
-test('has no critical accessibility violations with the search dialog open', async ({ page }) => {
+test('has no critical accessibility violations with the search dialog open', async ({
+  page,
+}) => {
   await connectMockWorkspace(page, 'meu-workspace', { 'nota.md': 'conteúdo' })
 
   await openSearchViaShortcut(page)
@@ -114,7 +122,9 @@ test('has no critical accessibility violations with the search dialog open', asy
   await page.getByRole('option').first().waitFor()
 
   const results = await new AxeBuilder({ page }).analyze()
-  const critical = results.violations.filter((violation) => violation.impact === 'critical')
+  const critical = results.violations.filter(
+    (violation) => violation.impact === 'critical',
+  )
 
   expect(critical).toEqual([])
 })

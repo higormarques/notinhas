@@ -21,7 +21,12 @@ const {
 <template>
   <div class="flex h-full flex-col gap-2 p-2">
     <div v-if="selectedTag" class="flex shrink-0 items-center gap-1 border-b pb-2">
-      <Button variant="ghost" size="sm" aria-label="Voltar para a lista de tags" @click="clearSelectedTag">
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-label="Voltar para a lista de tags"
+        @click="clearSelectedTag"
+      >
         <ChevronLeft class="size-4" />
       </Button>
       <Badge variant="secondary">#{{ selectedTag }}</Badge>
@@ -30,7 +35,10 @@ const {
     <p v-if="indexStatus === 'building'" class="p-2 text-sm text-muted-foreground">
       Construindo índice de tags…
     </p>
-    <p v-else-if="!selectedTag && tags.length === 0" class="p-2 text-sm text-muted-foreground">
+    <p
+      v-else-if="!selectedTag && tags.length === 0"
+      class="p-2 text-sm text-muted-foreground"
+    >
       Nenhuma tag ainda. Use <code>#tag</code> no corpo de uma nota para criar uma.
     </p>
     <p

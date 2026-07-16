@@ -20,7 +20,9 @@ function buildDecorations(doc: ProseMirrorNode): DecorationSet {
   doc.descendants((node, pos, parent) => {
     if (!node.isText || isInsideCode(node, parent)) return
     for (const match of extractTags(node.text ?? '')) {
-      decorations.push(Decoration.inline(pos + match.from, pos + match.to, { class: 'note-tag' }))
+      decorations.push(
+        Decoration.inline(pos + match.from, pos + match.to, { class: 'note-tag' }),
+      )
     }
   })
   return DecorationSet.create(doc, decorations)

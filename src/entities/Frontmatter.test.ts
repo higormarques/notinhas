@@ -10,7 +10,8 @@ describe('parseFrontmatter', () => {
   })
 
   it('parses a leading frontmatter block and strips exactly one following blank line', () => {
-    const content = '---\ncriado: 2026-07-15T00:00:00.000Z\natualizado: 2026-07-16T00:00:00.000Z\n---\n\ncorpo'
+    const content =
+      '---\ncriado: 2026-07-15T00:00:00.000Z\natualizado: 2026-07-16T00:00:00.000Z\n---\n\ncorpo'
     expect(parseFrontmatter(content)).toEqual({
       frontmatter: {
         criado: '2026-07-15T00:00:00.000Z',

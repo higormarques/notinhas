@@ -30,7 +30,9 @@ async function openNote(page: Page, testInfo: TestInfo, name: string) {
       const items = Array.from(document.querySelectorAll('[role="treeitem"]'))
       return {
         currentIndex: items.indexOf(document.activeElement as Element),
-        targetIndex: items.findIndex((el) => el.getAttribute('data-tree-path') === targetPath),
+        targetIndex: items.findIndex(
+          (el) => el.getAttribute('data-tree-path') === targetPath,
+        ),
       }
     }, name)
     if (currentIndex === targetIndex) break
@@ -71,9 +73,15 @@ test('formats a note with heading, lists, code block and table entirely via keyb
 
   await expect(page.getByText('Salvo')).toBeVisible({ timeout: 3000 })
 
-  await expect(editorContent.getByRole('heading', { level: 1, name: 'Título' })).toBeVisible()
-  await expect(editorContent.getByRole('listitem').filter({ hasText: 'item um' })).toBeVisible()
-  await expect(editorContent.getByRole('listitem').filter({ hasText: 'item dois' })).toBeVisible()
+  await expect(
+    editorContent.getByRole('heading', { level: 1, name: 'Título' }),
+  ).toBeVisible()
+  await expect(
+    editorContent.getByRole('listitem').filter({ hasText: 'item um' }),
+  ).toBeVisible()
+  await expect(
+    editorContent.getByRole('listitem').filter({ hasText: 'item dois' }),
+  ).toBeVisible()
   await expect(editorContent.locator('pre code')).toContainText('const x = 1')
   await expect(editorContent.locator('table')).toBeVisible()
   await expect(editorContent.locator('table td, table th')).toHaveCount(9)
@@ -82,14 +90,20 @@ test('formats a note with heading, lists, code block and table entirely via keyb
   await openNote(page, testInfo, 'nota.md')
 
   const reopenedContent = page.getByRole('textbox', { name: 'Conteúdo da nota' })
-  await expect(reopenedContent.getByRole('heading', { level: 1, name: 'Título' })).toBeVisible()
-  await expect(reopenedContent.getByRole('listitem').filter({ hasText: 'item um' })).toBeVisible()
-  await expect(reopenedContent.getByRole('listitem').filter({ hasText: 'item dois' })).toBeVisible()
+  await expect(
+    reopenedContent.getByRole('heading', { level: 1, name: 'Título' }),
+  ).toBeVisible()
+  await expect(
+    reopenedContent.getByRole('listitem').filter({ hasText: 'item um' }),
+  ).toBeVisible()
+  await expect(
+    reopenedContent.getByRole('listitem').filter({ hasText: 'item dois' }),
+  ).toBeVisible()
   await expect(reopenedContent.locator('pre code')).toContainText('const x = 1')
   await expect(reopenedContent.locator('table td, table th')).toHaveCount(9)
 })
 
-test('switching notes mid-edit shows only the newly opened note\'s content and saves the pending edit to its own file', async ({
+test("switching notes mid-edit shows only the newly opened note's content and saves the pending edit to its own file", async ({
   page,
 }, testInfo) => {
   await connectMockWorkspace(page, 'meu-workspace', {
@@ -116,7 +130,7 @@ test('switching notes mid-edit shows only the newly opened note\'s content and s
   await expect(editorContent).toHaveText('conteúdo original de B')
 })
 
-test('switching to the Daily Desk mid-edit shows only the daily note\'s content and saves the pending edit to its own file', async ({
+test("switching to the Daily Desk mid-edit shows only the daily note's content and saves the pending edit to its own file", async ({
   page,
 }, testInfo) => {
   await connectMockWorkspace(page, 'meu-workspace', { 'a.md': '' })
@@ -133,7 +147,9 @@ test('switching to the Daily Desk mid-edit shows only the daily note\'s content 
   await page.keyboard.press('Enter')
   await closeTreeOnMobile(page, testInfo)
 
-  await expect(page.getByRole('heading', { name: '2026-07-15.md', level: 2 })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '2026-07-15.md', level: 2 }),
+  ).toBeVisible()
   await expect(editorContent).toHaveText('')
 
   await expect(page.getByText('Salvo')).toBeVisible({ timeout: 3000 })
@@ -188,7 +204,9 @@ test('has no critical accessibility violations while editing a formatted note', 
   await page.getByRole('textbox', { name: 'Conteúdo da nota' }).waitFor()
 
   const results = await new AxeBuilder({ page }).analyze()
-  const critical = results.violations.filter((violation) => violation.impact === 'critical')
+  const critical = results.violations.filter(
+    (violation) => violation.impact === 'critical',
+  )
 
   expect(critical).toEqual([])
 })

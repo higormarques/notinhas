@@ -76,7 +76,8 @@ describe('useNoteProperties', () => {
 
   it('parses existing frontmatter into criado/atualizado and custom entries', async () => {
     adapter = createFakeAdapter({
-      'nota.md': '---\ncriado: 2026-07-01T00:00:00.000Z\natualizado: 2026-07-10T00:00:00.000Z\nprioridade: alta\n---\ncorpo',
+      'nota.md':
+        '---\ncriado: 2026-07-01T00:00:00.000Z\natualizado: 2026-07-10T00:00:00.000Z\nprioridade: alta\n---\ncorpo',
     })
     vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
     useNotesStore().openNote('nota.md')

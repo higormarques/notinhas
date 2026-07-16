@@ -2,7 +2,11 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useNotesStore } from '@/shared/stores/notes'
 import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
-import { ensureIndexReady, notesLinkingTo, type SearchIndexEntry } from '@/shared/search/searchIndex'
+import {
+  ensureIndexReady,
+  notesLinkingTo,
+  type SearchIndexEntry,
+} from '@/shared/search/searchIndex'
 
 /** Lista roving-tabindex (mesmo padrão de `useFileTree.ts`/`useTagsPanel.ts`) das notas que
  * linkam para a nota ativa via `[[link]]`. `notesLinkingTo` já é reativo porque `entries` é um

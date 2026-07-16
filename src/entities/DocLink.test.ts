@@ -36,7 +36,10 @@ describe('extractDocLinks', () => {
 
 describe('docLinkTargets', () => {
   it('deduplicates and preserves first-seen order, trimming whitespace', () => {
-    expect(docLinkTargets('[[ Nota A ]] e [[Nota B]] e [[Nota A]]')).toEqual(['Nota A', 'Nota B'])
+    expect(docLinkTargets('[[ Nota A ]] e [[Nota B]] e [[Nota A]]')).toEqual([
+      'Nota A',
+      'Nota B',
+    ])
   })
 
   it('ignores empty targets', () => {
@@ -48,7 +51,9 @@ describe('resolveDocLinkTarget', () => {
   it('resolves case-insensitively', () => {
     const titleToPath = new Map([['minha nota', 'Pasta/Minha Nota.md']])
     expect(resolveDocLinkTarget('Minha Nota', titleToPath)).toBe('Pasta/Minha Nota.md')
-    expect(resolveDocLinkTarget('  minha nota  ', titleToPath)).toBe('Pasta/Minha Nota.md')
+    expect(resolveDocLinkTarget('  minha nota  ', titleToPath)).toBe(
+      'Pasta/Minha Nota.md',
+    )
   })
 
   it('returns null when there is no match', () => {
@@ -58,7 +63,9 @@ describe('resolveDocLinkTarget', () => {
 
 describe('unescapeDocLinkMarkdown', () => {
   it('undoes the double-bracket escaping applied by @tiptap/markdown serialization', () => {
-    expect(unescapeDocLinkMarkdown('texto \\[\\[Nota\\]\\] aqui')).toBe('texto [[Nota]] aqui')
+    expect(unescapeDocLinkMarkdown('texto \\[\\[Nota\\]\\] aqui')).toBe(
+      'texto [[Nota]] aqui',
+    )
   })
 
   it('leaves single escaped brackets untouched', () => {

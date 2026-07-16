@@ -63,9 +63,9 @@ describe('parseSmartDate', () => {
 
 describe('mostRecentDateBefore', () => {
   it('returns the closest earlier date', () => {
-    expect(mostRecentDateBefore(['2026-07-01', '2026-07-10', '2026-07-20'], '2026-07-15')).toBe(
-      '2026-07-10',
-    )
+    expect(
+      mostRecentDateBefore(['2026-07-01', '2026-07-10', '2026-07-20'], '2026-07-15'),
+    ).toBe('2026-07-10')
   })
 
   it('ignores dates on or after the reference date', () => {
@@ -110,7 +110,11 @@ describe('removeIncompleteTaskLines', () => {
 describe('buildMigratedNoteContent', () => {
   it('returns the target content unchanged when there is nothing to migrate', () => {
     expect(
-      buildMigratedNoteContent({ targetContent: '', migratedTaskLines: [], fromDate: '2026-07-14' }),
+      buildMigratedNoteContent({
+        targetContent: '',
+        migratedTaskLines: [],
+        fromDate: '2026-07-14',
+      }),
     ).toBe('')
   })
 

@@ -93,7 +93,9 @@ test('has no critical accessibility violations with the tags tab open', async ({
   await expect(page.getByRole('option', { name: /^trabalho/ })).toBeVisible()
 
   const results = await new AxeBuilder({ page }).analyze()
-  const critical = results.violations.filter((violation) => violation.impact === 'critical')
+  const critical = results.violations.filter(
+    (violation) => violation.impact === 'critical',
+  )
 
   expect(critical).toEqual([])
 })

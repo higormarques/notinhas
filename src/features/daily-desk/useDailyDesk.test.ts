@@ -27,7 +27,11 @@ function createFakeAdapter(initialFiles: Record<string, string> = {}): StorageAd
         .filter((key) => key.startsWith(prefix))
         .map((key) => key.slice(prefix.length))
       if (names.length === 0) throw new Error(`not found: ${path}`)
-      return names.map((name) => ({ name, path: `${path}/${name}`, kind: 'file' as const }))
+      return names.map((name) => ({
+        name,
+        path: `${path}/${name}`,
+        kind: 'file' as const,
+      }))
     }),
     readFile: vi.fn(async (path: string) => {
       const value = files.get(path)
@@ -104,7 +108,8 @@ describe('useDailyDesk', () => {
 
   it('migrates incomplete tasks from the most recent prior daily note when creating today', async () => {
     adapter = createFakeAdapter({
-      'Daily/2026-07-13.md': '# 13 de julho\n- [ ] revisar PR\n- [x] tarefa feita\n- [ ] responder email',
+      'Daily/2026-07-13.md':
+        '# 13 de julho\n- [ ] revisar PR\n- [x] tarefa feita\n- [ ] responder email',
     })
     vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
     const { result } = mountComposable()
@@ -135,7 +140,10 @@ describe('useDailyDesk', () => {
     await flushPromises()
 
     expect(adapter.writeFile).toHaveBeenCalledWith('Daily/2026-07-20.md', '')
-    expect(adapter.writeFile).not.toHaveBeenCalledWith('Daily/2026-07-13.md', expect.anything())
+    expect(adapter.writeFile).not.toHaveBeenCalledWith(
+      'Daily/2026-07-13.md',
+      expect.anything(),
+    )
   })
 
   it('reports whether a date has a note via hasNote once the directory listing loads', async () => {

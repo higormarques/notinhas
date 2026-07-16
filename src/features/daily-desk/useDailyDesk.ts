@@ -29,15 +29,19 @@ export function useDailyDesk() {
 
   const previewQuery = useQuery({
     queryKey: computed(
-      () => ['file', hoveredDate.value ? dailyNotePath(hoveredDate.value) : null] as const,
+      () =>
+        ['file', hoveredDate.value ? dailyNotePath(hoveredDate.value) : null] as const,
     ),
-    queryFn: () => getStorageAdapter().readFile(dailyNotePath(hoveredDate.value as string)),
+    queryFn: () =>
+      getStorageAdapter().readFile(dailyNotePath(hoveredDate.value as string)),
     enabled: computed(
       () => hoveredDate.value !== null && datesWithNotes.value.has(hoveredDate.value),
     ),
   })
 
-  const previewTaskCount = computed(() => countIncompleteTasks(previewQuery.data.value ?? ''))
+  const previewTaskCount = computed(() =>
+    countIncompleteTasks(previewQuery.data.value ?? ''),
+  )
   const previewExcerpt = computed(() => {
     const data = previewQuery.data.value
     if (!data) return ''

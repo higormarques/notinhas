@@ -19,7 +19,9 @@ function matches(event: KeyboardEvent, keys: string): boolean {
   const needsShift = parts.includes('shift')
   const hasMod = event.metaKey || event.ctrlKey
   return (
-    event.key.toLowerCase() === key && hasMod === needsMod && event.shiftKey === needsShift
+    event.key.toLowerCase() === key &&
+    hasMod === needsMod &&
+    event.shiftKey === needsShift
   )
 }
 

@@ -191,7 +191,9 @@ describe('useNoteEditor', () => {
       await vi.advanceTimersByTimeAsync(700)
       await flushPromises()
 
-      const { frontmatter } = parseFrontmatter(vi.mocked(adapter.writeFile).mock.calls[0][1])
+      const { frontmatter } = parseFrontmatter(
+        vi.mocked(adapter.writeFile).mock.calls[0][1],
+      )
       expect(frontmatter.criado).toBeDefined()
       expect(frontmatter.criado).toBe(frontmatter.atualizado)
     })
@@ -204,12 +206,16 @@ describe('useNoteEditor', () => {
       result.editor.value?.commands.setContent('primeira edição')
       await vi.advanceTimersByTimeAsync(700)
       await flushPromises()
-      const first = parseFrontmatter(vi.mocked(adapter.writeFile).mock.calls[0][1]).frontmatter
+      const first = parseFrontmatter(
+        vi.mocked(adapter.writeFile).mock.calls[0][1],
+      ).frontmatter
 
       result.editor.value?.commands.setContent('segunda edição')
       await vi.advanceTimersByTimeAsync(700)
       await flushPromises()
-      const second = parseFrontmatter(vi.mocked(adapter.writeFile).mock.calls[1][1]).frontmatter
+      const second = parseFrontmatter(
+        vi.mocked(adapter.writeFile).mock.calls[1][1],
+      ).frontmatter
 
       expect(second.criado).toBe(first.criado)
       expect(second.atualizado).not.toBe(first.atualizado)
@@ -340,7 +346,7 @@ describe('useNoteEditor', () => {
       }
     }
 
-    it('clears the previous note\'s content immediately, instead of leaving it on screen while the new note loads', async () => {
+    it("clears the previous note's content immediately, instead of leaving it on screen while the new note loads", async () => {
       const slow = createSlowReadAdapter({ 'a.md': 'conteudo A', 'b.md': 'conteudo B' })
       vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(slow.adapter)
       useNotesStore().openNote('a.md')
@@ -359,8 +365,11 @@ describe('useNoteEditor', () => {
       expect(result.editor.value?.getText()).toBe('conteudo B')
     })
 
-    it('saves a pending edit to its own note, never to the newly opened note\'s file, even if the debounce fires while the new note is still loading', async () => {
-      const slow = createSlowReadAdapter({ 'a.md': 'conteudo A', 'b.md': 'conteudo B original' })
+    it("saves a pending edit to its own note, never to the newly opened note's file, even if the debounce fires while the new note is still loading", async () => {
+      const slow = createSlowReadAdapter({
+        'a.md': 'conteudo A',
+        'b.md': 'conteudo B original',
+      })
       vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(slow.adapter)
       useNotesStore().openNote('a.md')
       const { result } = mountComposable()

@@ -51,7 +51,10 @@ export async function openOrCreateDailyNote(date: string): Promise<string> {
       const priorContent = await getStorageAdapter().readFile(priorPath)
       const migratedLines = extractIncompleteTaskLines(priorContent)
       if (migratedLines.length > 0) {
-        await getStorageAdapter().writeFile(priorPath, removeIncompleteTaskLines(priorContent))
+        await getStorageAdapter().writeFile(
+          priorPath,
+          removeIncompleteTaskLines(priorContent),
+        )
         content = buildMigratedNoteContent({
           targetContent: '',
           migratedTaskLines: migratedLines,

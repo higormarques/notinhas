@@ -14,7 +14,10 @@ function createFakeAdapter(): StorageAdapter {
   return {
     listDirectory: vi.fn(async (path: string) => {
       const prefix = path ? `${path}/` : ''
-      const byName = new Map<string, { name: string; path: string; kind: 'file' | 'directory' }>()
+      const byName = new Map<
+        string,
+        { name: string; path: string; kind: 'file' | 'directory' }
+      >()
       for (const filePath of files.keys()) {
         if (!filePath.startsWith(prefix)) continue
         const rest = filePath.slice(prefix.length)
@@ -39,7 +42,8 @@ function createFakeAdapter(): StorageAdapter {
     deleteFile: vi.fn(async (path: string) => {
       files.delete(path)
       const prefix = `${path}/`
-      for (const key of Array.from(files.keys())) if (key.startsWith(prefix)) files.delete(key)
+      for (const key of Array.from(files.keys()))
+        if (key.startsWith(prefix)) files.delete(key)
     }),
     rename: vi.fn(async (fromPath: string, toPath: string) => {
       if (files.has(fromPath)) {

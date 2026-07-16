@@ -44,8 +44,15 @@ const {
           :key="entry.key"
           class="flex items-center gap-1.5"
         >
-          <label :for="`property-key-${entry.key}`" class="sr-only">Chave da propriedade</label>
-          <Input :id="`property-key-${entry.key}`" :model-value="entry.key" disabled class="h-8 flex-1" />
+          <label :for="`property-key-${entry.key}`" class="sr-only"
+            >Chave da propriedade</label
+          >
+          <Input
+            :id="`property-key-${entry.key}`"
+            :model-value="entry.key"
+            disabled
+            class="h-8 flex-1"
+          />
           <label :for="`property-value-${entry.key}`" class="sr-only">
             Valor de {{ entry.key }}
           </label>
@@ -68,9 +75,19 @@ const {
 
       <form class="flex items-center gap-1.5" @submit.prevent="addProperty">
         <label for="property-new-key" class="sr-only">Nova chave</label>
-        <Input id="property-new-key" v-model="newKey" placeholder="Chave" class="h-8 flex-1" />
+        <Input
+          id="property-new-key"
+          v-model="newKey"
+          placeholder="Chave"
+          class="h-8 flex-1"
+        />
         <label for="property-new-value" class="sr-only">Novo valor</label>
-        <Input id="property-new-value" v-model="newValue" placeholder="Valor" class="h-8 flex-1" />
+        <Input
+          id="property-new-value"
+          v-model="newValue"
+          placeholder="Valor"
+          class="h-8 flex-1"
+        />
         <Button type="submit" variant="outline" size="sm">Adicionar</Button>
       </form>
     </template>

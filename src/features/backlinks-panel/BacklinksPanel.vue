@@ -13,7 +13,12 @@ const { backlinks, isEmptyState, focusedPath, registerRowEl, openNote, handleKey
     <p v-else-if="backlinks.length === 0" class="p-2 text-sm text-muted-foreground">
       Nenhuma nota linka para esta.
     </p>
-    <ul v-else role="listbox" aria-label="Notas que linkam para esta" class="flex-1 overflow-auto">
+    <ul
+      v-else
+      role="listbox"
+      aria-label="Notas que linkam para esta"
+      class="flex-1 overflow-auto"
+    >
       <li v-for="entry in backlinks" :key="entry.path" role="none">
         <div
           :ref="(el) => registerRowEl(entry.path, el as Element | null)"

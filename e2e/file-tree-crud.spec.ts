@@ -62,7 +62,9 @@ test('creates, edits, renames, and deletes a note entirely via keyboard', async 
   await expect(noteItem).toHaveCount(0)
 
   await closeTreeOnMobile(page, testInfo)
-  await expect(page.getByRole('textbox', { name: 'Conteúdo da nota' })).toHaveText('Olá mundo')
+  await expect(page.getByRole('textbox', { name: 'Conteúdo da nota' })).toHaveText(
+    'Olá mundo',
+  )
 
   await openTreeOnMobile(page, testInfo)
   await renamedItem.focus()
@@ -154,7 +156,9 @@ test('reorganizes notes and folders via drag-and-drop', async ({ page }, testInf
 
   await draftItem.dragTo(folderItem)
 
-  await expect(page.getByRole('treeitem', { name: 'Rascunho', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('treeitem', { name: 'Rascunho', exact: true })).toHaveCount(
+    0,
+  )
   // Depois de um drop via mouse o foco lógico da árvore pode recair sobre outra linha visível
   // (a árvore permanece navegável, só não força a revelação do item movido) — expandir a pasta
   // via clique, e não via ArrowRight, evita depender desse estado interno de foco.
@@ -170,7 +174,9 @@ test('reorganizes notes and folders via drag-and-drop', async ({ page }, testInf
   await expect(rootDraftItem).toHaveAttribute('aria-level', '1')
 
   const results = await new AxeBuilder({ page }).analyze()
-  const critical = results.violations.filter((violation) => violation.impact === 'critical')
+  const critical = results.violations.filter(
+    (violation) => violation.impact === 'critical',
+  )
   expect(critical).toEqual([])
 
   await closeTreeOnMobile(page, testInfo)

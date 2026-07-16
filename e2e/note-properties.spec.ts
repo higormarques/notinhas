@@ -22,7 +22,9 @@ async function openNote(page: Page, testInfo: TestInfo, name: string) {
       const items = Array.from(document.querySelectorAll('[role="treeitem"]'))
       return {
         currentIndex: items.indexOf(document.activeElement as Element),
-        targetIndex: items.findIndex((el) => el.getAttribute('data-tree-path') === targetPath),
+        targetIndex: items.findIndex(
+          (el) => el.getAttribute('data-tree-path') === targetPath,
+        ),
       }
     }, name)
     if (currentIndex === targetIndex) break
@@ -127,7 +129,9 @@ test('shows an empty state when there is no active note', async ({ page }, testI
   await page.getByRole('tab', { name: 'Propriedades' }).focus()
   await page.keyboard.press('Enter')
 
-  await expect(page.getByText('Selecione uma nota para ver suas propriedades.')).toBeVisible()
+  await expect(
+    page.getByText('Selecione uma nota para ver suas propriedades.'),
+  ).toBeVisible()
 })
 
 test('has no critical accessibility violations with the properties tab open', async ({
@@ -142,7 +146,9 @@ test('has no critical accessibility violations with the properties tab open', as
   await expect(page.getByLabel('Valor de prioridade')).toBeVisible()
 
   const results = await new AxeBuilder({ page }).analyze()
-  const critical = results.violations.filter((violation) => violation.impact === 'critical')
+  const critical = results.violations.filter(
+    (violation) => violation.impact === 'critical',
+  )
 
   expect(critical).toEqual([])
 })

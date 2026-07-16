@@ -31,7 +31,10 @@ export function formatIsoDate(referenceDate: Date = new Date()): string {
  * explícitas como `20/07/2026`) via chrono-node (locale `pt`, modo casual). Retorna `null` para
  * texto que não parece uma data — usado pela paleta de comandos para só oferecer a entrada
  * "Ir para data" quando o texto digitado realmente resolve para uma data. */
-export function parseSmartDate(input: string, referenceDate: Date = new Date()): string | null {
+export function parseSmartDate(
+  input: string,
+  referenceDate: Date = new Date(),
+): string | null {
   const trimmed = input.trim()
   if (trimmed.length === 0) return null
   const parsed = pt.casual.parseDate(trimmed, referenceDate)
@@ -41,7 +44,12 @@ export function parseSmartDate(input: string, referenceDate: Date = new Date()):
 /** Data com maior string (convenção `YYYY-MM-DD` ordena lexicograficamente) anterior a `date`,
  * ou `null` se não houver nenhuma. */
 export function mostRecentDateBefore(dates: string[], date: string): string | null {
-  return dates.filter((candidate) => candidate < date).sort().at(-1) ?? null
+  return (
+    dates
+      .filter((candidate) => candidate < date)
+      .sort()
+      .at(-1) ?? null
+  )
 }
 
 export function extractIncompleteTaskLines(content: string): string[] {

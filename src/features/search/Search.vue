@@ -1,20 +1,38 @@
 <script setup lang="ts">
 import { SearchIcon } from '@lucide/vue'
 import { ListboxContent, ListboxFilter, ListboxItem, ListboxRoot } from 'reka-ui'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 import { InputGroup, InputGroupAddon } from '@/shared/ui/input-group'
 import { useSearch } from './useSearch'
 
-const { isOpen, handleOpenChange, query, results, isBuildingIndex, showEmptyState, selectResult } =
-  useSearch()
+const {
+  isOpen,
+  handleOpenChange,
+  query,
+  results,
+  isBuildingIndex,
+  showEmptyState,
+  selectResult,
+} = useSearch()
 </script>
 
 <template>
   <Dialog :open="isOpen" @update:open="handleOpenChange">
-    <DialogContent class="top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0" :show-close-button="false">
+    <DialogContent
+      class="top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0"
+      :show-close-button="false"
+    >
       <DialogHeader class="sr-only">
         <DialogTitle>Buscar em notas</DialogTitle>
-        <DialogDescription>Busque por título ou conteúdo em todas as notas</DialogDescription>
+        <DialogDescription
+          >Busque por título ou conteúdo em todas as notas</DialogDescription
+        >
       </DialogHeader>
 
       <ListboxRoot highlight-on-hover class="flex size-full flex-col overflow-hidden p-1">
@@ -35,11 +53,19 @@ const { isOpen, handleOpenChange, query, results, isBuildingIndex, showEmptyStat
           </InputGroup>
         </div>
 
-        <ListboxContent class="no-scrollbar mt-1 max-h-80 overflow-x-hidden overflow-y-auto outline-none">
-          <p v-if="isBuildingIndex" class="px-3 py-6 text-center text-sm text-muted-foreground">
+        <ListboxContent
+          class="no-scrollbar mt-1 max-h-80 overflow-x-hidden overflow-y-auto outline-none"
+        >
+          <p
+            v-if="isBuildingIndex"
+            class="px-3 py-6 text-center text-sm text-muted-foreground"
+          >
             Construindo índice de busca…
           </p>
-          <p v-else-if="showEmptyState" class="px-3 py-6 text-center text-sm text-muted-foreground">
+          <p
+            v-else-if="showEmptyState"
+            class="px-3 py-6 text-center text-sm text-muted-foreground"
+          >
             Nenhum resultado encontrado.
           </p>
           <ListboxItem
@@ -50,7 +76,9 @@ const { isOpen, handleOpenChange, query, results, isBuildingIndex, showEmptyStat
             @select="selectResult(result.path)"
           >
             <span class="truncate font-medium">{{ result.title }}</span>
-            <span class="truncate text-xs text-muted-foreground">{{ result.snippet }}</span>
+            <span class="truncate text-xs text-muted-foreground">{{
+              result.snippet
+            }}</span>
           </ListboxItem>
         </ListboxContent>
       </ListboxRoot>

@@ -43,7 +43,9 @@ export function useNoteProperties() {
   const customEntries = computed<PropertyEntry[]>(() => {
     if (!parsed.value) return []
     return Object.entries(parsed.value.frontmatter)
-      .filter(([key, value]) => key !== 'criado' && key !== 'atualizado' && value !== undefined)
+      .filter(
+        ([key, value]) => key !== 'criado' && key !== 'atualizado' && value !== undefined,
+      )
       .map(([key, value]) => ({ key, value: value as string }))
   })
 
@@ -52,23 +54,35 @@ export function useNoteProperties() {
 
   const saveMutation = useMutation({
     mutationFn: async (vars: { path: string; frontmatter: Frontmatter; body: string }) =>
-      getStorageAdapter().writeFile(vars.path, serializeNote(vars.frontmatter, vars.body)),
+      getStorageAdapter().writeFile(
+        vars.path,
+        serializeNote(vars.frontmatter, vars.body),
+      ),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: ['file', vars.path] })
     },
   })
 
-  function withUpdatedFrontmatter(mutate: (frontmatter: Frontmatter) => Frontmatter): void {
+  function withUpdatedFrontmatter(
+    mutate: (frontmatter: Frontmatter) => Frontmatter,
+  ): void {
     const path = activeNotePath.value
     if (!path || !parsed.value) return
     const nextFrontmatter = stampTimestamps(mutate(parsed.value.frontmatter), new Date())
-    void saveMutation.mutateAsync({ path, frontmatter: nextFrontmatter, body: parsed.value.body })
+    void saveMutation.mutateAsync({
+      path,
+      frontmatter: nextFrontmatter,
+      body: parsed.value.body,
+    })
   }
 
   function addProperty(): void {
     const key = newKey.value.trim()
     if (!key) return
-    withUpdatedFrontmatter((frontmatter) => ({ ...frontmatter, [key]: newValue.value.trim() }))
+    withUpdatedFrontmatter((frontmatter) => ({
+      ...frontmatter,
+      [key]: newValue.value.trim(),
+    }))
     newKey.value = ''
     newValue.value = ''
   }
@@ -79,7 +93,9 @@ export function useNoteProperties() {
 
   function removeProperty(key: string): void {
     withUpdatedFrontmatter((frontmatter) =>
-      Object.fromEntries(Object.entries(frontmatter).filter(([entryKey]) => entryKey !== key)),
+      Object.fromEntries(
+        Object.entries(frontmatter).filter(([entryKey]) => entryKey !== key),
+      ),
     )
   }
 

@@ -16,7 +16,9 @@ async function closeTreeOnMobile(page: Page, testInfo: TestInfo) {
   await page.keyboard.press('Escape')
 }
 
-test('opens an existing note via the command palette, keyboard only', async ({ page }) => {
+test('opens an existing note via the command palette, keyboard only', async ({
+  page,
+}) => {
   await connectMockWorkspace(page, 'meu-workspace', { 'bemvindo.md': 'Olá mundo' })
 
   await page.keyboard.press('Control+k')
@@ -30,7 +32,9 @@ test('opens an existing note via the command palette, keyboard only', async ({ p
   await page.keyboard.press('Enter')
 
   await expect(input).toBeHidden()
-  await expect(page.getByRole('textbox', { name: 'Conteúdo da nota' })).toHaveText('Olá mundo')
+  await expect(page.getByRole('textbox', { name: 'Conteúdo da nota' })).toHaveText(
+    'Olá mundo',
+  )
 })
 
 test('creates a new note from the command palette when there is no match, keyboard only', async ({
@@ -79,7 +83,9 @@ test('closes the palette with Escape without taking any action', async ({ page }
   await expect(input).toBeHidden()
 })
 
-test('is reachable via the header search button as well as the shortcut', async ({ page }) => {
+test('is reachable via the header search button as well as the shortcut', async ({
+  page,
+}) => {
   await connectMockWorkspace(page)
 
   await page.getByRole('button', { name: 'Abrir paleta de comandos' }).focus()
@@ -88,7 +94,9 @@ test('is reachable via the header search button as well as the shortcut', async 
   await expect(page.getByPlaceholder(PALETTE_PLACEHOLDER)).toBeVisible()
 })
 
-test('has no critical accessibility violations with the palette open', async ({ page }) => {
+test('has no critical accessibility violations with the palette open', async ({
+  page,
+}) => {
   await connectMockWorkspace(page)
 
   await page.keyboard.press('Control+k')

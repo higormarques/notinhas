@@ -59,10 +59,10 @@ a cada `writeFile`/`deleteFile`/`rename`. Ver seção "Índice de busca" abaixo.
 
 ## Convenção de query keys (TanStack Query)
 
-| Key                   | Uso                                    |
-| --------------------- | -------------------------------------- |
-| `['directory', path]` | listagem de uma pasta (inclui `['directory', 'Daily']`, usada pelo Daily Desk — Fase 5) |
-| `['file', path]`      | conteúdo de um arquivo/nota (inclui notas diárias, via `dailyNotePath(date)` — Fase 5) |
+| Key                   | Uso                                                                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `['directory', path]` | listagem de uma pasta (inclui `['directory', 'Daily']`, usada pelo Daily Desk — Fase 5)                                           |
+| `['file', path]`      | conteúdo de um arquivo/nota (inclui notas diárias, via `dailyNotePath(date)` — Fase 5)                                            |
 | `['notes-index']`     | lista achatada e recursiva de todas as notas do workspace, usada pela paleta de comandos (Fase 3) para "ir para nota"/"nova nota" |
 
 Toda mutation que escreve/renomeia/apaga invalida a(s) query key(s) afetada(s). Refetch
@@ -112,12 +112,12 @@ ver "Camada de storage" acima) em vez de por invalidação de query key espalhad
 
 ## Pinia stores
 
-| Store                                              | Responsabilidade única                                                                                                                                                                                                                    |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useUiStore` (`shared/stores/ui.ts`)               | painéis abertos (esquerdo/direito) em breakpoints tablet/desktop. Já implementado na Fase 0.                                                                                                                                              |
-| `useWorkspaceStore` (chega na Fase 1)              | workspace ativo (referência ao handle/adapter escolhido), estado de conexão/permissão.                                                                                                                                                    |
+| Store                                                               | Responsabilidade única                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useUiStore` (`shared/stores/ui.ts`)                                | painéis abertos (esquerdo/direito) em breakpoints tablet/desktop. Já implementado na Fase 0.                                                                                                                                                                                                                                                                                                                                           |
+| `useWorkspaceStore` (chega na Fase 1)                               | workspace ativo (referência ao handle/adapter escolhido), estado de conexão/permissão.                                                                                                                                                                                                                                                                                                                                                 |
 | `useNotesStore` (`shared/stores/notes.ts`, Fase 2; abas — ADR 0007) | `openTabs` (paths das notas abertas, na ordem em que foram abertas) + `activeNotePath` (qual delas está visível) — compartilhada entre `file-tree`/`daily-desk`/`command-palette`/`search`/`tags-panel`/`backlinks-panel`/`docLinkExtension` (abrem via `openNote`, que adiciona a aba se ainda não existir e sempre foca) e `note-tabs`/`note-editor` (leem/fecham/renomeiam abas); nunca guarda conteúdo de arquivo, só os caminhos. |
-| `useThemeStore`/`useTheme` composable              | tema claro/escuro — hoje é um composable simples (`shared/composables/useTheme.ts`) com estado em módulo + persistência em `localStorage`; só vira store Pinia se precisar ser injetado em múltiplos contextos de teste de forma isolada. |
+| `useThemeStore`/`useTheme` composable                               | tema claro/escuro — hoje é um composable simples (`shared/composables/useTheme.ts`) com estado em módulo + persistência em `localStorage`; só vira store Pinia se precisar ser injetado em múltiplos contextos de teste de forma isolada.                                                                                                                                                                                              |
 
 Nenhuma store guarda conteúdo de arquivo, resultado de busca ou árvore de diretórios — isso é
 sempre responsabilidade do cache do TanStack Query.
@@ -196,7 +196,7 @@ sempre responsabilidade do cache do TanStack Query.
     `flushAutosave` capturam `path` e `value` como parâmetros no momento da edição (dentro do
     próprio `onUpdate`), nunca lidos de `activeNotePath`/`content` de dentro do timer — o mesmo
     autosave sempre grava no arquivo a que pertence, não importa quando ele efetivamente dispare.
-  - **Troca de nota**: `watch(activeNotePath, (newPath, oldPath) => ...)` dá *flush* imediato de
+  - **Troca de nota**: `watch(activeNotePath, (newPath, oldPath) => ...)` dá _flush_ imediato de
     qualquer autosave pendente da nota antiga (não espera os 300ms) e limpa o editor
     (`setContent('', { emitUpdate: false })`) na hora — sem isso, o conteúdo da nota anterior
     continuava na tela até o `fileQuery` da nota nova resolver. `onBeforeUnmount` também faz
@@ -303,7 +303,7 @@ sempre responsabilidade do cache do TanStack Query.
     agenda autosave quando `path !== HELP_NOTE_PATH`, e (2) `NoteEditor.vue` esconde a toolbar
     inteira (`v-if="!isReadOnly"`) em vez de tentar desabilitar botão por botão. O
     `editor.setEditable(...)` em si vive num `watchEffect` separado do `watch(activeNotePath,
-    ...)` de troca de nota — `useEditor()` só cria a instância dentro de `onMounted`, então um
+...)` de troca de nota — `useEditor()` só cria a instância dentro de `onMounted`, então um
     `watch` comum com `immediate: true` perderia a primeira chamada (com `editor.value` ainda
     `undefined`) se a nota de ajuda já for a nota ativa no momento em que o editor monta;
     `watchEffect` reconecta a dependência em `editor.value` e roda de novo assim que a instância

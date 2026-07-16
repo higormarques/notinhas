@@ -32,7 +32,10 @@ vi.mock('idb-keyval', () => ({
 function createFakeAdapter(files: Record<string, string>): StorageAdapter {
   function listChildren(path: string) {
     const prefix = path ? `${path}/` : ''
-    const byName = new Map<string, { name: string; path: string; kind: 'file' | 'directory' }>()
+    const byName = new Map<
+      string,
+      { name: string; path: string; kind: 'file' | 'directory' }
+    >()
     for (const filePath of Object.keys(files)) {
       if (!filePath.startsWith(prefix)) continue
       const rest = filePath.slice(prefix.length)
@@ -190,7 +193,9 @@ describe('searchIndex', () => {
       await renameSubtree('velho.md', 'novo.md')
 
       const results = search('mesmo conteúdo')
-      expect(results).toEqual([{ path: 'novo.md', title: 'novo', snippet: 'mesmo conteúdo' }])
+      expect(results).toEqual([
+        { path: 'novo.md', title: 'novo', snippet: 'mesmo conteúdo' },
+      ])
     })
 
     it('remaps every entry under a renamed/moved folder', async () => {
@@ -199,10 +204,11 @@ describe('searchIndex', () => {
 
       await renameSubtree('Origem', 'Destino')
 
-      expect(search('conteudo').map((r) => r.path).sort()).toEqual([
-        'Destino/a.md',
-        'Destino/sub/b.md',
-      ])
+      expect(
+        search('conteudo')
+          .map((r) => r.path)
+          .sort(),
+      ).toEqual(['Destino/a.md', 'Destino/sub/b.md'])
     })
   })
 

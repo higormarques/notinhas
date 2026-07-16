@@ -153,7 +153,8 @@ export async function renameSubtree(fromPath: string, toPath: string): Promise<v
   )
   for (const [oldPath, entry] of toRemap) {
     entries.delete(oldPath)
-    const newPath = oldPath === fromPath ? toPath : toPath + oldPath.slice(fromPath.length)
+    const newPath =
+      oldPath === fromPath ? toPath : toPath + oldPath.slice(fromPath.length)
     entries.set(newPath, { ...entry, path: newPath, title: titleFromPath(newPath) })
   }
   await persist()
@@ -175,7 +176,11 @@ export function search(query: string): SearchResult[] {
   const trimmed = query.trim().toLowerCase()
   if (trimmed.length === 0) return []
 
-  const matches: { entry: SearchIndexEntry; titleMatch: boolean; contentIndex: number }[] = []
+  const matches: {
+    entry: SearchIndexEntry
+    titleMatch: boolean
+    contentIndex: number
+  }[] = []
   for (const entry of entries.values()) {
     const titleMatch = entry.title.toLowerCase().includes(trimmed)
     const contentIndex = entry.content.toLowerCase().indexOf(trimmed)
@@ -242,7 +247,9 @@ export function buildTitleIndex(): Map<string, string> {
 export function notesLinkingTo(path: string): SearchIndexEntry[] {
   const titleToPath = buildTitleIndex()
   return Array.from(entries.values())
-    .filter((entry) => entry.links.some((target) => titleToPath.get(target.toLowerCase()) === path))
+    .filter((entry) =>
+      entry.links.some((target) => titleToPath.get(target.toLowerCase()) === path),
+    )
     .sort((a, b) => a.title.localeCompare(b.title))
 }
 

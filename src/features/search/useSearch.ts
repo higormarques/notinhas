@@ -2,7 +2,11 @@ import { computed, ref } from 'vue'
 import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
 import { useNotesStore } from '@/shared/stores/notes'
 import { useShortcuts } from '@/shared/composables/useShortcuts'
-import { ensureIndexReady, getIndexStatus, search as searchIndex } from '@/shared/search/searchIndex'
+import {
+  ensureIndexReady,
+  getIndexStatus,
+  search as searchIndex,
+} from '@/shared/search/searchIndex'
 
 export function useSearch() {
   const notesStore = useNotesStore()
@@ -45,7 +49,10 @@ export function useSearch() {
   const results = computed(() => searchIndex(query.value))
   const isBuildingIndex = computed(() => indexStatus.value === 'building')
   const showEmptyState = computed(
-    () => !isBuildingIndex.value && query.value.trim().length > 0 && results.value.length === 0,
+    () =>
+      !isBuildingIndex.value &&
+      query.value.trim().length > 0 &&
+      results.value.length === 0,
   )
 
   function selectResult(path: string) {

@@ -51,7 +51,10 @@ function findMatches(doc: ProseMirrorNode, query: string): FindInNoteMatch[] {
   return results
 }
 
-function buildDecorations(doc: ProseMirrorNode, storage: FindInNoteStorage): DecorationSet {
+function buildDecorations(
+  doc: ProseMirrorNode,
+  storage: FindInNoteStorage,
+): DecorationSet {
   const decorations = storage.results.map((match, index) =>
     Decoration.inline(match.from, match.to, {
       class:
@@ -94,7 +97,8 @@ export const FindInNote = Extension.create<Record<string, never>, FindInNoteStor
 
           const delta = direction === 'next' ? 1 : -1
           storage.activeIndex =
-            (storage.activeIndex + delta + storage.results.length) % storage.results.length
+            (storage.activeIndex + delta + storage.results.length) %
+            storage.results.length
 
           if (dispatch) {
             const match = storage.results[storage.activeIndex]

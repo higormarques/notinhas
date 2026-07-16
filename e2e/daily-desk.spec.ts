@@ -40,7 +40,7 @@ test.beforeEach(async ({ page }) => {
   await page.clock.setFixedTime(FIXED_TODAY)
 })
 
-test('creates and opens today\'s daily note from the calendar, keyboard only', async ({
+test("creates and opens today's daily note from the calendar, keyboard only", async ({
   page,
 }, testInfo) => {
   await connectMockWorkspace(page)
@@ -49,7 +49,9 @@ test('creates and opens today\'s daily note from the calendar, keyboard only', a
   await focusTodayCell(page)
   await pressEnterToSelectDate(page, testInfo)
 
-  await expect(page.getByRole('heading', { name: '2026-07-15.md', level: 2 })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '2026-07-15.md', level: 2 }),
+  ).toBeVisible()
   // O Daily Desk é um painel persistente, não um modal — no desktop/tablet, selecionar um
   // dia não deve escondê-lo (no mobile ele mora dentro do sheet que acabamos de fechar).
   if (testInfo.project.name !== 'mobile') {
@@ -64,7 +66,9 @@ test('does not show the Daily folder in the file tree', async ({ page }, testInf
   })
 
   await openTreeOnMobile(page, testInfo)
-  await expect(page.getByRole('treeitem', { name: 'nota-normal', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('treeitem', { name: 'nota-normal', exact: true }),
+  ).toBeVisible()
   await expect(page.getByRole('treeitem', { name: 'Daily', exact: true })).toHaveCount(0)
   await closeTreeOnMobile(page, testInfo)
 })
@@ -85,7 +89,9 @@ test('navigates 30 days forward on the calendar via arrow keys, keyboard only', 
   }
   await pressEnterToSelectDate(page, testInfo)
 
-  await expect(page.getByRole('heading', { name: expectedFileName, level: 2 })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: expectedFileName, level: 2 }),
+  ).toBeVisible()
 })
 
 test('opens an existing daily note without overwriting its content', async ({
@@ -104,12 +110,13 @@ test('opens an existing daily note without overwriting its content', async ({
   )
 })
 
-test('migrates incomplete tasks from the most recent prior daily note into today\'s note', async ({
+test("migrates incomplete tasks from the most recent prior daily note into today's note", async ({
   page,
 }, testInfo) => {
   await connectMockWorkspace(page, 'meu-workspace', {
     Daily: {
-      '2026-07-13.md': '# 13 de julho\n- [ ] revisar PR\n- [x] tarefa feita\n- [ ] responder email',
+      '2026-07-13.md':
+        '# 13 de julho\n- [ ] revisar PR\n- [x] tarefa feita\n- [ ] responder email',
     },
   })
 
@@ -163,7 +170,9 @@ test('has no critical accessibility violations with the Daily Desk expanded', as
   await openDailyDeskViaShortcut(page)
 
   const results = await new AxeBuilder({ page }).analyze()
-  const critical = results.violations.filter((violation) => violation.impact === 'critical')
+  const critical = results.violations.filter(
+    (violation) => violation.impact === 'critical',
+  )
 
   expect(critical).toEqual([])
 })

@@ -2,7 +2,11 @@
 import { CalendarRoot } from 'reka-ui'
 import { ChevronDown, ChevronUp } from '@lucide/vue'
 import { Button } from '@/shared/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/shared/ui/collapsible'
 import {
   CalendarCell,
   CalendarCellTrigger,
@@ -16,7 +20,12 @@ import {
   CalendarNextButton,
   CalendarPrevButton,
 } from '@/shared/ui/calendar'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/shared/ui/tooltip'
 import { useDailyDesk } from './useDailyDesk'
 
 const {
@@ -71,7 +80,9 @@ const {
             <CalendarGrid v-for="month in grid" :key="month.value.toString()">
               <CalendarGridHead>
                 <CalendarGridRow>
-                  <CalendarHeadCell v-for="day in weekDays" :key="day">{{ day }}</CalendarHeadCell>
+                  <CalendarHeadCell v-for="day in weekDays" :key="day">{{
+                    day
+                  }}</CalendarHeadCell>
                 </CalendarGridRow>
               </CalendarGridHead>
               <CalendarGridBody>

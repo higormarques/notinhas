@@ -80,7 +80,9 @@ test('opens the help guide as a note tab via the header button, keyboard only, a
 
   // Clicar de novo reaproveita a mesma aba/nota em vez de duplicar.
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('tab', { name: 'Guia do notinhas', exact: true })).toHaveCount(1)
+  await expect(
+    page.getByRole('tab', { name: 'Guia do notinhas', exact: true }),
+  ).toHaveCount(1)
 
   // A nota pertence ao core do app — não aparece na árvore, e por isso não tem como ser
   // renomeada/apagada pela UI (a única ação de renomear/excluir do app é a da árvore).

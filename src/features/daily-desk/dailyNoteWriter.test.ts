@@ -17,7 +17,11 @@ function createFakeAdapter(initialFiles: Record<string, string> = {}): StorageAd
         .filter((key) => key.startsWith(prefix))
         .map((key) => key.slice(prefix.length))
       if (names.length === 0) throw new Error(`not found: ${path}`)
-      return names.map((name) => ({ name, path: `${path}/${name}`, kind: 'file' as const }))
+      return names.map((name) => ({
+        name,
+        path: `${path}/${name}`,
+        kind: 'file' as const,
+      }))
     }),
     readFile: vi.fn(async (path: string) => {
       const value = files.get(path)

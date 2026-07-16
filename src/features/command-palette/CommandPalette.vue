@@ -71,7 +71,9 @@ const {
           <Plus />
           {{ createLabel }}
         </ListboxItem>
-        <CommandEmpty v-else-if="!showSmartDateOption">Nenhum resultado encontrado.</CommandEmpty>
+        <CommandEmpty v-else-if="!showSmartDateOption"
+          >Nenhum resultado encontrado.</CommandEmpty
+        >
 
         <!-- Mesmo motivo do item "Criar nota" acima: o rótulo muda a cada tecla digitada. -->
         <ListboxItem

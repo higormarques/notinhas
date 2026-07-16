@@ -11,7 +11,7 @@ Na primeira vez que você abre o notinhas, é preciso escolher uma pasta local (
 suas notas vão morar. Clique em **Escolher pasta do workspace** e selecione (ou crie) uma pasta
 no seletor nativo do navegador.
 
-- Em navegadores com suporte à *File System Access API* (Chrome, Edge, Opera), o app lembra da
+- Em navegadores com suporte à _File System Access API_ (Chrome, Edge, Opera), o app lembra da
   pasta escolhida entre sessões — ao reabrir, só é preciso confirmar a permissão de acesso.
 - Em navegadores sem esse suporte (Firefox, Safari), o notinhas usa um armazenamento de sandbox
   do próprio navegador (OPFS) como alternativa — um aviso aparece no topo da tela avisando que,
@@ -110,17 +110,17 @@ usam; `Escape` volta pra lista de tags.
 
 ## Atalhos de teclado — resumo
 
-| Atalho             | Ação                              |
-| ------------------- | ---------------------------------- |
-| `Mod+K`             | Abrir paleta de comandos            |
-| `Mod+Shift+F`       | Buscar em todas as notas            |
-| `Mod+J`             | Abrir Daily Desk                    |
-| `Mod+F`             | Buscar dentro da nota aberta        |
-| `Mod+Enter`         | Seguir o `[[link]]` sob o cursor    |
-| `n` / `Shift+N`     | Nova nota / nova pasta (árvore)     |
-| `F2`                | Renomear/mover item focado (árvore) |
-| `Delete`            | Excluir item focado (árvore)        |
-| `Delete`/`Backspace`| Fechar aba de nota focada           |
+| Atalho               | Ação                                |
+| -------------------- | ----------------------------------- |
+| `Mod+K`              | Abrir paleta de comandos            |
+| `Mod+Shift+F`        | Buscar em todas as notas            |
+| `Mod+J`              | Abrir Daily Desk                    |
+| `Mod+F`              | Buscar dentro da nota aberta        |
+| `Mod+Enter`          | Seguir o `[[link]]` sob o cursor    |
+| `n` / `Shift+N`      | Nova nota / nova pasta (árvore)     |
+| `F2`                 | Renomear/mover item focado (árvore) |
+| `Delete`             | Excluir item focado (árvore)        |
+| `Delete`/`Backspace` | Fechar aba de nota focada           |
 
 `Mod` é `⌘` no macOS e `Ctrl` no Windows/Linux.
 

@@ -21,7 +21,10 @@ vi.mock('@/shared/storage/createStorageAdapter', () => ({
 function createFakeAdapter(files: Record<string, string>): StorageAdapter {
   function listChildren(path: string) {
     const prefix = path ? `${path}/` : ''
-    const byName = new Map<string, { name: string; path: string; kind: 'file' | 'directory' }>()
+    const byName = new Map<
+      string,
+      { name: string; path: string; kind: 'file' | 'directory' }
+    >()
     for (const filePath of Object.keys(files)) {
       if (!filePath.startsWith(prefix)) continue
       const rest = filePath.slice(prefix.length)
