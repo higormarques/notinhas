@@ -42,6 +42,14 @@ const {
   isSubmitting,
   submitDialog,
   handleDialogOpenChange,
+  dragOverPath,
+  handleDragStart,
+  handleDragEnd,
+  handleRowDragOver,
+  handleRowDragLeave,
+  handleRowDrop,
+  handleRootDragOver,
+  handleRootDrop,
 } = useFileTree()
 </script>
 
@@ -63,7 +71,15 @@ const {
       Nenhuma nota ainda. Crie uma nota para começar.
     </p>
 
-    <ul v-else role="tree" aria-label="Árvore de arquivos" class="flex-1 overflow-auto">
+    <ul
+      v-else
+      role="tree"
+      aria-label="Árvore de arquivos"
+      class="flex-1 overflow-auto"
+      :class="{ 'bg-accent/40': dragOverPath === '' }"
+      @dragover="handleRootDragOver"
+      @drop="handleRootDrop"
+    >
       <li v-for="row in rows" :key="row.entry.path" role="none">
         <ContextMenu>
           <ContextMenuTrigger as-child>
@@ -75,10 +91,17 @@ const {
               :aria-selected="row.entry.path === focusedPath"
               :data-tree-path="row.entry.path"
               :tabindex="row.entry.path === focusedPath ? 0 : -1"
+              draggable="true"
               class="flex cursor-pointer items-center gap-1.5 rounded px-1.5 py-1 text-sm outline-none hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+              :class="{ 'bg-accent ring-1 ring-ring': dragOverPath === row.entry.path }"
               :style="{ paddingLeft: `${row.depth * 16 + 6}px` }"
               @click="activateRow(row)"
               @keydown="handleTreeKeydown"
+              @dragstart="handleDragStart(row.entry.path)"
+              @dragend="handleDragEnd"
+              @dragover="handleRowDragOver($event, row)"
+              @dragleave="handleRowDragLeave(row)"
+              @drop="handleRowDrop($event, row)"
             >
               <Folder v-if="row.entry.kind === 'directory'" class="size-4 shrink-0" />
               <File v-else class="size-4 shrink-0" />

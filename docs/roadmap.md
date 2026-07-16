@@ -103,6 +103,32 @@ atalhos/paleta. Textarea simples com autosave (debounce).
 _Pronto quando:_ criar/renomear/excluir uma nota inteiramente via teclado (script Playwright
 keyboard-only); check responsivo; testes unitários do adapter e das queries.
 
+**Revisado depois da Fase 7** (fora de qualquer fase formal, correção de bug + extensão pedida
+pelo usuário em uso real):
+
+- Bug real: `defaultParentPath()` usava o item focado como pasta-alvo mesmo quando colapsado —
+  depois de criar a 1ª pasta na raiz, o foco migrava para ela e a 2ª pasta acabava nascendo
+  **dentro** da 1ª em vez de como irmã na raiz, tornando impossível criar mais de uma
+  pasta/nota na raiz via toolbar/atalhos sem manobra manual de foco. Corrigido: uma pasta só é
+  tratada como "diretório atual" (novo item nasce dentro dela) quando está **expandida**; pasta
+  colapsada ou arquivo focado → novo item nasce como irmã (no pai do item focado).
+- Reorganização via drag-and-drop adicionada à árvore de arquivos: `moveEntry()` extraído de
+  `submitRename` e reaproveitado por handlers de `dragstart`/`dragover`/`drop`/`dragend` em
+  `useFileTree.ts` (mesma mutation `rename` do `StorageAdapter`, sem mudança de contrato).
+  Dropar sobre uma pasta move para dentro dela (`dropTargetFor`, independente de estar
+  expandida — diferente de `defaultParentPath`, que rege onde criar, não onde dropar); dropar
+  sobre um arquivo ou na área vazia da árvore move para o mesmo diretório desse arquivo/para a
+  raiz. `canDropInto` bloqueia soltar uma pasta dentro de si mesma/de um descendente e no-ops
+  quando o destino já é o local atual. Interação por mouse; o caminho equivalente por teclado
+  (F2 → editar caminho) já existia e segue coberto pelo teste keyboard-only — drag-and-drop é
+  um atalho adicional, não um fluxo novo sem alternativa por teclado.
+- `useFileTree.test.ts`: testes novos para criação de dois itens irmãos na raiz e para os
+  handlers de drag-and-drop (mover para pasta, mover de volta pra raiz, bloqueio de
+  auto-aninhamento, no-op no mesmo lugar). `e2e/file-tree-crud.spec.ts`: teste novo
+  `reorganizes notes and folders via drag-and-drop` (`page.dragTo`, nos 3 breakpoints, com
+  checagem `@axe-core/playwright`) — não keyboard-only de propósito, já que exercita a
+  interação por mouse.
+
 ## Fase 3 — Paleta de comandos + sistema global de atalhos — ✅ concluída
 
 Command (shadcn-vue) como paleta Cmd/Ctrl+K: nova nota (cria a partir do texto digitado quando

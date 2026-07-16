@@ -123,6 +123,59 @@ test('creates a folder, a nested note inside it, and navigates the tree with arr
   await expect(nestedItem).toHaveCount(0)
 })
 
+test('reorganizes notes and folders via drag-and-drop', async ({ page }, testInfo) => {
+  await connectMockWorkspace(page)
+
+  await openTreeOnMobile(page, testInfo)
+
+  async function createRootItem(kind: 'Nova nota' | 'Nova pasta', name: string) {
+    await page.getByRole('button', { name: kind }).focus()
+    await page.keyboard.press('Enter')
+    const input = page.getByLabel('Nome')
+    await input.waitFor()
+    await input.focus()
+    await page.keyboard.type(name)
+    await page.keyboard.press('Enter')
+  }
+
+  // Cria pasta + duas notas na raiz — também exercita o fix do bug relatado (criar mais de um
+  // item na raiz não pode "cair" dentro do item criado anteriormente).
+  await createRootItem('Nova pasta', 'Projetos')
+  await createRootItem('Nova nota', 'Rascunho')
+  await createRootItem('Nova nota', 'Ideias')
+
+  const folderItem = page.getByRole('treeitem', { name: 'Projetos', exact: true })
+  const draftItem = page.getByRole('treeitem', { name: 'Rascunho.md', exact: true })
+  const ideasItem = page.getByRole('treeitem', { name: 'Ideias.md', exact: true })
+  await expect(folderItem).toBeVisible()
+  await expect(draftItem).toBeVisible()
+  await expect(ideasItem).toBeVisible()
+  await expect(draftItem).toHaveAttribute('aria-level', '1')
+
+  await draftItem.dragTo(folderItem)
+
+  await expect(page.getByRole('treeitem', { name: 'Rascunho.md', exact: true })).toHaveCount(0)
+  // Depois de um drop via mouse o foco lógico da árvore pode recair sobre outra linha visível
+  // (a árvore permanece navegável, só não força a revelação do item movido) — expandir a pasta
+  // via clique, e não via ArrowRight, evita depender desse estado interno de foco.
+  await folderItem.click()
+  const nestedDraftItem = page.getByRole('treeitem', { name: 'Rascunho.md', exact: true })
+  await expect(nestedDraftItem).toBeVisible()
+  await expect(nestedDraftItem).toHaveAttribute('aria-level', '2')
+
+  await nestedDraftItem.dragTo(ideasItem)
+
+  const rootDraftItem = page.getByRole('treeitem', { name: 'Rascunho.md', exact: true })
+  await expect(rootDraftItem).toBeVisible()
+  await expect(rootDraftItem).toHaveAttribute('aria-level', '1')
+
+  const results = await new AxeBuilder({ page }).analyze()
+  const critical = results.violations.filter((violation) => violation.impact === 'critical')
+  expect(critical).toEqual([])
+
+  await closeTreeOnMobile(page, testInfo)
+})
+
 test('has no critical accessibility violations with a dialog open', async ({
   page,
 }, testInfo) => {

@@ -135,7 +135,26 @@ describe('useFileTree', () => {
     expect(result.focusedPath.value).toBe('bemvindo.md')
   })
 
-  it('creates a note inside the focused folder and opens it', async () => {
+  it('creates a note inside the focused folder when it is expanded', async () => {
+    await adapter.createDirectory('Notas')
+
+    const result = mountComposable()
+    await flushPromises()
+
+    result.focusedPath.value = 'Notas'
+    result.handleTreeKeydown({ key: 'ArrowRight', preventDefault: () => {} } as KeyboardEvent)
+    await flushPromises()
+
+    result.openCreateNoteDialog()
+    result.dialog.value.name = 'bemvindo'
+    await result.submitDialog()
+    await flushPromises()
+
+    expect(adapter.writeFile).toHaveBeenCalledWith('Notas/bemvindo.md', '')
+    expect(useNotesStore().activeNotePath).toBe('Notas/bemvindo.md')
+  })
+
+  it('creates a note as a sibling of a focused but collapsed folder', async () => {
     await adapter.createDirectory('Notas')
 
     const result = mountComposable()
@@ -147,8 +166,31 @@ describe('useFileTree', () => {
     await result.submitDialog()
     await flushPromises()
 
-    expect(adapter.writeFile).toHaveBeenCalledWith('Notas/bemvindo.md', '')
-    expect(useNotesStore().activeNotePath).toBe('Notas/bemvindo.md')
+    expect(adapter.writeFile).toHaveBeenCalledWith('bemvindo.md', '')
+  })
+
+  it('creates a second root-level folder as a sibling of the first, not nested inside it', async () => {
+    const result = mountComposable()
+    await flushPromises()
+
+    result.openCreateFolderDialog()
+    result.dialog.value.name = 'Primeira'
+    await result.submitDialog()
+    await flushPromises()
+
+    expect(adapter.createDirectory).toHaveBeenCalledWith('Primeira')
+    expect(result.focusedPath.value).toBe('Primeira')
+
+    result.openCreateFolderDialog()
+    result.dialog.value.name = 'Segunda'
+    await result.submitDialog()
+    await flushPromises()
+
+    expect(adapter.createDirectory).toHaveBeenCalledWith('Segunda')
+    expect(result.rows.value.map((row) => row.entry.path)).toEqual([
+      'Primeira',
+      'Segunda',
+    ])
   })
 
   it('renames/moves an entry and keeps the active note pointer in sync', async () => {
@@ -231,5 +273,90 @@ describe('useFileTree', () => {
       preventDefault: () => {},
     } as KeyboardEvent)
     expect(result.focusedPath.value).toBe('a.md')
+  })
+
+  function fakeDragEvent(): DragEvent {
+    return { preventDefault: () => {}, stopPropagation: () => {} } as unknown as DragEvent
+  }
+
+  it('moves a note into a folder via drag-and-drop', async () => {
+    await adapter.writeFile('nota.md', 'conteudo')
+    await adapter.createDirectory('Pasta')
+
+    const result = mountComposable()
+    await flushPromises()
+
+    const folderRow = result.rows.value.find((row) => row.entry.path === 'Pasta')!
+    result.handleDragStart('nota.md')
+    result.handleRowDragOver(fakeDragEvent(), folderRow)
+    expect(result.dragOverPath.value).toBe('Pasta')
+
+    result.handleRowDrop(fakeDragEvent(), folderRow)
+    await flushPromises()
+
+    expect(adapter.rename).toHaveBeenCalledWith('nota.md', 'Pasta/nota.md')
+    expect(result.dragOverPath.value).toBeNull()
+  })
+
+  it('moves a nested note back to the root via the root drop zone', async () => {
+    await adapter.createDirectory('Pasta')
+    await adapter.writeFile('Pasta/nota.md', 'conteudo')
+
+    const result = mountComposable()
+    await flushPromises()
+    result.focusedPath.value = 'Pasta'
+    result.handleTreeKeydown({ key: 'ArrowRight', preventDefault: () => {} } as KeyboardEvent)
+    await flushPromises()
+
+    result.handleDragStart('Pasta/nota.md')
+    result.handleRootDragOver(fakeDragEvent())
+    expect(result.dragOverPath.value).toBe('')
+
+    result.handleRootDrop(fakeDragEvent())
+    await flushPromises()
+
+    expect(adapter.rename).toHaveBeenCalledWith('Pasta/nota.md', 'nota.md')
+  })
+
+  it('refuses to drop a folder into itself or into its own descendant', async () => {
+    await adapter.createDirectory('Pasta')
+    await adapter.createDirectory('Pasta/Sub')
+
+    const result = mountComposable()
+    await flushPromises()
+    result.focusedPath.value = 'Pasta'
+    result.handleTreeKeydown({ key: 'ArrowRight', preventDefault: () => {} } as KeyboardEvent)
+    await flushPromises()
+
+    const selfRow = result.rows.value.find((row) => row.entry.path === 'Pasta')!
+    const subRow = result.rows.value.find((row) => row.entry.path === 'Pasta/Sub')!
+
+    result.handleDragStart('Pasta')
+    result.handleRowDragOver(fakeDragEvent(), selfRow)
+    expect(result.dragOverPath.value).toBeNull()
+    result.handleRowDragOver(fakeDragEvent(), subRow)
+    expect(result.dragOverPath.value).toBeNull()
+
+    result.handleRowDrop(fakeDragEvent(), subRow)
+    await flushPromises()
+
+    expect(adapter.rename).not.toHaveBeenCalled()
+  })
+
+  it('ignores a drop that would leave the item in the same place', async () => {
+    await adapter.writeFile('nota.md', 'conteudo')
+
+    const result = mountComposable()
+    await flushPromises()
+
+    const noteRow = result.rows.value.find((row) => row.entry.path === 'nota.md')!
+    result.handleDragStart('nota.md')
+    result.handleRootDragOver(fakeDragEvent())
+    expect(result.dragOverPath.value).toBeNull()
+
+    result.handleRowDrop(fakeDragEvent(), noteRow)
+    await flushPromises()
+
+    expect(adapter.rename).not.toHaveBeenCalled()
   })
 })

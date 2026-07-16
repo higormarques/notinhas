@@ -166,7 +166,12 @@ export function useFileTree() {
   function defaultParentPath(): string {
     const row = rows.value.find((r) => r.entry.path === focusedPath.value)
     if (!row) return ''
-    return row.entry.kind === 'directory' ? row.entry.path : parentOf(row.entry.path)
+    // Uma pasta só é "o diretório atual" quando está expandida (você navegou para dentro
+    // dela). Uma pasta colapsada é tratada como qualquer outro item: o novo item nasce como
+    // irmã dela (no pai), não dentro — senão criar vários itens na raiz fica impossível depois
+    // do primeiro, porque o foco migra para o item recém-criado.
+    if (row.entry.kind === 'directory' && row.isExpanded) return row.entry.path
+    return parentOf(row.entry.path)
   }
 
   function openCreateNoteDialog() {
@@ -264,6 +269,15 @@ export function useFileTree() {
     }
   }
 
+  async function moveEntry(fromPath: string, toPath: string) {
+    await renameMutation.mutateAsync({ fromPath, toPath })
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['directory', parentOf(fromPath)] }),
+      queryClient.invalidateQueries({ queryKey: ['directory', parentOf(toPath)] }),
+    ])
+    remapExpandedAndActive(fromPath, toPath)
+  }
+
   async function submitRename() {
     const fromPath = dialog.value.path
     const toPath = dialog.value.name.trim()
@@ -273,18 +287,86 @@ export function useFileTree() {
     }
 
     try {
-      await renameMutation.mutateAsync({ fromPath, toPath })
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['directory', parentOf(fromPath)] }),
-        queryClient.invalidateQueries({ queryKey: ['directory', parentOf(toPath)] }),
-      ])
-      remapExpandedAndActive(fromPath, toPath)
+      await moveEntry(fromPath, toPath)
       closeDialog()
       focusRow(toPath)
     } catch {
       errorMessage.value =
         'Não foi possível renomear/mover. Verifique o caminho informado.'
     }
+  }
+
+  // Reorganização via drag-and-drop. Interação só por mouse — o caminho equivalente por
+  // teclado (F2 → editar caminho, ver submitRename acima) já cobre a mesma capacidade de
+  // mover, então isso é um atalho adicional, não um fluxo novo sem alternativa por teclado.
+  const draggedPath = ref<string | null>(null)
+  const dragOverPath = ref<string | null>(null)
+
+  // Dropar sobre uma pasta sempre move para dentro dela, esteja expandida ou não — diferente
+  // do "onde criar por padrão" (defaultParentPath), aqui o alvo visual do drop é
+  // inequívoco. Dropar sobre um arquivo move para o mesmo diretório desse arquivo (irmão).
+  function dropTargetFor(row: FileTreeRow): string {
+    return row.entry.kind === 'directory' ? row.entry.path : parentOf(row.entry.path)
+  }
+
+  function canDropInto(sourcePath: string, targetParentPath: string): boolean {
+    if (isWithin(targetParentPath, sourcePath)) return false
+    if (parentOf(sourcePath) === targetParentPath) return false
+    return true
+  }
+
+  function handleDragStart(path: string) {
+    draggedPath.value = path
+  }
+
+  function handleDragEnd() {
+    draggedPath.value = null
+    dragOverPath.value = null
+  }
+
+  function handleRowDragOver(event: DragEvent, row: FileTreeRow) {
+    if (!draggedPath.value || !canDropInto(draggedPath.value, dropTargetFor(row))) return
+    event.preventDefault()
+    event.stopPropagation()
+    dragOverPath.value = row.entry.path
+  }
+
+  function handleRowDragLeave(row: FileTreeRow) {
+    if (dragOverPath.value === row.entry.path) dragOverPath.value = null
+  }
+
+  function handleRootDragOver(event: DragEvent) {
+    if (!draggedPath.value || !canDropInto(draggedPath.value, '')) return
+    event.preventDefault()
+    dragOverPath.value = ''
+  }
+
+  async function performDrop(targetParentPath: string) {
+    const sourcePath = draggedPath.value
+    handleDragEnd()
+    if (!sourcePath || !canDropInto(sourcePath, targetParentPath)) return
+
+    const leafName = sourcePath.split('/').pop() ?? sourcePath
+    const toPath = joinPath(targetParentPath, leafName)
+
+    try {
+      await moveEntry(sourcePath, toPath)
+      focusRow(toPath)
+    } catch {
+      errorMessage.value =
+        'Não foi possível mover. Verifique se já existe um item com esse nome no destino.'
+    }
+  }
+
+  function handleRowDrop(event: DragEvent, row: FileTreeRow) {
+    event.preventDefault()
+    event.stopPropagation()
+    void performDrop(dropTargetFor(row))
+  }
+
+  function handleRootDrop(event: DragEvent) {
+    event.preventDefault()
+    void performDrop('')
   }
 
   async function confirmDelete() {
@@ -453,5 +535,13 @@ export function useFileTree() {
     isSubmitting,
     submitDialog,
     handleDialogOpenChange,
+    dragOverPath,
+    handleDragStart,
+    handleDragEnd,
+    handleRowDragOver,
+    handleRowDragLeave,
+    handleRowDrop,
+    handleRootDragOver,
+    handleRootDrop,
   }
 }
