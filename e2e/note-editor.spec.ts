@@ -131,6 +131,7 @@ test('switching to the Daily Desk mid-edit shows only the daily note\'s content 
   await page.keyboard.press('Control+j')
   await page.getByRole('button', { name: /15 de julho de 2026/ }).focus()
   await page.keyboard.press('Enter')
+  await closeTreeOnMobile(page, testInfo)
 
   await expect(page.getByRole('heading', { name: '2026-07-15.md', level: 2 })).toBeVisible()
   await expect(editorContent).toHaveText('')

@@ -87,7 +87,6 @@ describe('useDailyDesk', () => {
 
     expect(adapter.writeFile).toHaveBeenCalledWith('Daily/2026-07-15.md', '')
     expect(useNotesStore().activeNotePath).toBe('Daily/2026-07-15.md')
-    expect(result.isOpen.value).toBe(false)
   })
 
   it('opens an existing daily note without rewriting it', async () => {
@@ -143,10 +142,24 @@ describe('useDailyDesk', () => {
     adapter = createFakeAdapter({ 'Daily/2026-07-10.md': 'nota' })
     vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
     const { result } = mountComposable()
-    result.open()
     await flushPromises()
 
     expect(result.hasNote(new CalendarDate(2026, 7, 10))).toBe(true)
     expect(result.hasNote(new CalendarDate(2026, 7, 11))).toBe(false)
+  })
+
+  it('starts expanded and can be collapsed/expanded via handleExpandedChange', async () => {
+    adapter = createFakeAdapter()
+    vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
+    const { result } = mountComposable()
+    await flushPromises()
+
+    expect(result.isExpanded.value).toBe(true)
+
+    result.handleExpandedChange(false)
+    expect(result.isExpanded.value).toBe(false)
+
+    result.handleExpandedChange(true)
+    expect(result.isExpanded.value).toBe(true)
   })
 })

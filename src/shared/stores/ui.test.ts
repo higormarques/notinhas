@@ -13,6 +13,13 @@ describe('useUiStore', () => {
     expect(store.isRightPanelOpen).toBe(true)
   })
 
+  it('starts with both sheets closed and the Daily Desk expanded', () => {
+    const store = useUiStore()
+    expect(store.isLeftSheetOpen).toBe(false)
+    expect(store.isRightSheetOpen).toBe(false)
+    expect(store.isDailyDeskExpanded).toBe(true)
+  })
+
   it('toggles each panel independently', () => {
     const store = useUiStore()
 

@@ -4,6 +4,9 @@ import { ref } from 'vue'
 export const useUiStore = defineStore('ui', () => {
   const isLeftPanelOpen = ref(true)
   const isRightPanelOpen = ref(true)
+  const isLeftSheetOpen = ref(false)
+  const isRightSheetOpen = ref(false)
+  const isDailyDeskExpanded = ref(true)
 
   function toggleLeftPanel() {
     isLeftPanelOpen.value = !isLeftPanelOpen.value
@@ -13,5 +16,13 @@ export const useUiStore = defineStore('ui', () => {
     isRightPanelOpen.value = !isRightPanelOpen.value
   }
 
-  return { isLeftPanelOpen, isRightPanelOpen, toggleLeftPanel, toggleRightPanel }
+  return {
+    isLeftPanelOpen,
+    isRightPanelOpen,
+    isLeftSheetOpen,
+    isRightSheetOpen,
+    isDailyDeskExpanded,
+    toggleLeftPanel,
+    toggleRightPanel,
+  }
 })

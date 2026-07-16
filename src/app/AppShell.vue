@@ -46,7 +46,6 @@ const {
 
   <div v-else class="flex h-svh w-full flex-col bg-background text-foreground">
     <CommandPalette />
-    <DailyDesk />
     <SearchDialog />
 
     <Alert v-if="isOpfsFallback" class="shrink-0 rounded-none border-x-0 border-t-0">
@@ -140,8 +139,11 @@ const {
       class="flex-1"
     >
       <ResizablePanel :default-size="20" :min-size="15" :max-size="35">
-        <div class="h-full overflow-hidden">
-          <FileNavigator />
+        <div class="flex h-full flex-col overflow-hidden">
+          <div class="min-h-0 flex-1 overflow-hidden">
+            <FileNavigator />
+          </div>
+          <DailyDesk />
         </div>
       </ResizablePanel>
       <ResizableHandle with-handle />
@@ -159,8 +161,11 @@ const {
     </ResizablePanelGroup>
 
     <div v-else-if="breakpoint === 'tablet'" class="flex flex-1 overflow-hidden">
-      <aside v-if="isLeftPanelOpen" class="w-56 shrink-0 overflow-hidden border-r">
-        <FileNavigator />
+      <aside v-if="isLeftPanelOpen" class="flex w-56 shrink-0 flex-col overflow-hidden border-r">
+        <div class="min-h-0 flex-1 overflow-hidden">
+          <FileNavigator />
+        </div>
+        <DailyDesk />
       </aside>
       <main class="flex-1 overflow-hidden">
         <NoteEditor />
@@ -182,8 +187,11 @@ const {
             >Árvore de arquivos do workspace</SheetDescription
           >
         </SheetHeader>
-        <div class="h-full overflow-hidden">
-          <FileNavigator />
+        <div class="flex h-full min-h-0 flex-col overflow-hidden">
+          <div class="min-h-0 flex-1 overflow-hidden">
+            <FileNavigator />
+          </div>
+          <DailyDesk />
         </div>
       </SheetContent>
     </Sheet>

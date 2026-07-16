@@ -1,35 +1,27 @@
 import { computed, ref, shallowRef } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { getLocalTimeZone, today } from '@internationalized/date'
 import type { DateValue } from 'reka-ui'
 import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
 import { useNotesStore } from '@/shared/stores/notes'
-import { useShortcuts } from '@/shared/composables/useShortcuts'
+import { useUiStore } from '@/shared/stores/ui'
 import { countIncompleteTasks, dailyNotePath, formatIsoDate } from '@/entities/DailyNote'
 import { DAILY_DIRECTORY, listDailyDates, openOrCreateDailyNote } from './dailyNoteWriter'
 
 export function useDailyDesk() {
   const notesStore = useNotesStore()
   const queryClient = useQueryClient()
-  const { register } = useShortcuts()
+  const uiStore = useUiStore()
+  const { isDailyDeskExpanded } = storeToRefs(uiStore)
 
-  const isOpen = ref(false)
   const selectedDate = shallowRef<DateValue>(today(getLocalTimeZone()))
   const hoveredDate = ref<string | null>(null)
-
-  register({
-    id: 'daily-desk:open',
-    keys: 'mod+j',
-    description: 'Abrir Daily Desk',
-    handler: () => {
-      isOpen.value = true
-    },
-  })
 
   const directoryQuery = useQuery({
     queryKey: ['directory', DAILY_DIRECTORY] as const,
     queryFn: listDailyDates,
-    enabled: isOpen,
+    enabled: isDailyDeskExpanded,
     staleTime: 0,
   })
 
@@ -67,27 +59,13 @@ export function useDailyDesk() {
     },
   })
 
-  function open() {
-    isOpen.value = true
-  }
-
-  function close() {
-    isOpen.value = false
-    hoveredDate.value = null
-  }
-
-  function handleOpenChange(value: boolean) {
-    if (value) {
-      open()
-    } else {
-      close()
-    }
+  function handleExpandedChange(value: boolean) {
+    uiStore.isDailyDeskExpanded = value
   }
 
   async function selectDate(value: DateValue) {
     selectedDate.value = value
     await openMutation.mutateAsync(value.toString())
-    close()
   }
 
   function setHoveredDate(value: DateValue | null) {
@@ -99,10 +77,8 @@ export function useDailyDesk() {
   }
 
   return {
-    isOpen,
-    open,
-    close,
-    handleOpenChange,
+    isExpanded: isDailyDeskExpanded,
+    handleExpandedChange,
     selectedDate,
     selectDate,
     hasNote,

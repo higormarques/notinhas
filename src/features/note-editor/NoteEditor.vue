@@ -309,8 +309,29 @@ const {
 
 .note-editor-content ul[data-type='taskList'] li {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   gap: 0.5em;
+}
+
+.note-editor-content ul[data-type='taskList'] li > label {
+  display: flex;
+  align-items: center;
+  margin-top: 0.2em;
+  user-select: none;
+}
+
+.note-editor-content ul[data-type='taskList'] li > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.note-editor-content ul[data-type='taskList'] li > div > p {
+  margin: 0;
+}
+
+.note-editor-content ul[data-type='taskList'] li input[type='checkbox'] {
+  margin: 0;
+  cursor: pointer;
 }
 
 .note-editor-content blockquote {
