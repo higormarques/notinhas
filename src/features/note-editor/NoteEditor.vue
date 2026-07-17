@@ -286,6 +286,7 @@ const {
   outline: none;
   min-height: 100%;
   padding: 0.5rem 0.25rem;
+  line-height: 1.6;
 }
 
 .note-editor-content h1,
@@ -315,23 +316,58 @@ const {
 .note-editor-content ol {
   padding-left: 1.5em;
   margin: 0.5em 0;
+  list-style-position: outside;
+}
+
+.note-editor-content ul {
+  list-style-type: disc;
+}
+
+.note-editor-content ul ul {
+  list-style-type: circle;
+}
+
+.note-editor-content ul ul ul {
+  list-style-type: square;
+}
+
+.note-editor-content ol {
+  list-style-type: decimal;
+}
+
+.note-editor-content li {
+  margin: 0.2em 0;
+}
+
+.note-editor-content li > p {
+  margin: 0;
+}
+
+/* Listas aninhadas herdam o espaçamento vertical do `li` pai — sem isto, a margem própria da
+   lista (0.5em) soma com a do parágrafo acima a cada nível, abrindo um vão cada vez maior e
+   dando a impressão de desalinhamento em sublistas profundas. */
+.note-editor-content li > ul,
+.note-editor-content li > ol {
+  margin: 0;
 }
 
 .note-editor-content ul[data-type='taskList'] {
   list-style: none;
-  padding-left: 0.5em;
+  padding-left: 0.25em;
 }
 
 .note-editor-content ul[data-type='taskList'] li {
   display: flex;
   align-items: flex-start;
   gap: 0.5em;
+  margin: 0.2em 0;
 }
 
 .note-editor-content ul[data-type='taskList'] li > label {
   display: flex;
   align-items: center;
-  margin-top: 0.2em;
+  height: 1.6em;
+  flex-shrink: 0;
   user-select: none;
 }
 
@@ -346,6 +382,8 @@ const {
 
 .note-editor-content ul[data-type='taskList'] li input[type='checkbox'] {
   margin: 0;
+  width: 1em;
+  height: 1em;
   cursor: pointer;
 }
 
