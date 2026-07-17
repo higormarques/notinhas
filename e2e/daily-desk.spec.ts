@@ -138,6 +138,28 @@ test("migrates incomplete tasks from the most recent prior daily note into today
   await expect(priorEditor).not.toContainText('revisar PR')
 })
 
+test('shows the dot indicator only for dates with a non-empty note', async ({ page }) => {
+  await connectMockWorkspace(page, 'meu-workspace', {
+    Daily: {
+      '2026-07-10.md': '',
+      '2026-07-11.md': 'Conteúdo real',
+    },
+  })
+
+  await openDailyDeskViaShortcut(page)
+
+  const dotLocator = '.rounded-full.bg-primary'
+  await expect(
+    page.getByRole('button', { name: /10 de julho de 2026/ }).locator(dotLocator),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: /11 de julho de 2026/ }).locator(dotLocator),
+  ).toHaveCount(1)
+  await expect(
+    page.getByRole('button', { name: TODAY_LABEL_PATTERN }).locator(dotLocator),
+  ).toHaveCount(0)
+})
+
 test('is reachable via the header button as well as the shortcut', async ({ page }) => {
   await connectMockWorkspace(page)
 

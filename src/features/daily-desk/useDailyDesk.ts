@@ -7,7 +7,11 @@ import { getStorageAdapter } from '@/shared/storage/createStorageAdapter'
 import { useNotesStore } from '@/shared/stores/notes'
 import { useUiStore } from '@/shared/stores/ui'
 import { countIncompleteTasks, dailyNotePath, formatIsoDate } from '@/entities/DailyNote'
-import { DAILY_DIRECTORY, listDailyDates, openOrCreateDailyNote } from './dailyNoteWriter'
+import {
+  DAILY_DIRECTORY,
+  listDatesWithContent,
+  openOrCreateDailyNote,
+} from './dailyNoteWriter'
 
 export function useDailyDesk() {
   const notesStore = useNotesStore()
@@ -20,7 +24,7 @@ export function useDailyDesk() {
 
   const directoryQuery = useQuery({
     queryKey: ['directory', DAILY_DIRECTORY] as const,
-    queryFn: listDailyDates,
+    queryFn: listDatesWithContent,
     enabled: isDailyDeskExpanded,
     staleTime: 0,
   })

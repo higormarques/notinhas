@@ -156,6 +156,15 @@ describe('useDailyDesk', () => {
     expect(result.hasNote(new CalendarDate(2026, 7, 11))).toBe(false)
   })
 
+  it('reports hasNote as false for a date whose note exists but is empty', async () => {
+    adapter = createFakeAdapter({ 'Daily/2026-07-12.md': '' })
+    vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)
+    const { result } = mountComposable()
+    await flushPromises()
+
+    expect(result.hasNote(new CalendarDate(2026, 7, 12))).toBe(false)
+  })
+
   it('starts expanded and can be collapsed/expanded via handleExpandedChange', async () => {
     adapter = createFakeAdapter()
     vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(adapter)

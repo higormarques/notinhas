@@ -1,4 +1,5 @@
 import { pt } from 'chrono-node'
+import { parseFrontmatter } from './Frontmatter'
 
 /** Pasta onde as notas diárias vivem — também usada para escondê-la da árvore de arquivos
  * (`file-tree`), já que a navegação por essas notas é feita pelo Daily Desk e pela paleta de
@@ -58,6 +59,15 @@ export function extractIncompleteTaskLines(content: string): string[] {
 
 export function countIncompleteTasks(content: string): number {
   return extractIncompleteTaskLines(content).length
+}
+
+/** Uma nota diária é considerada vazia quando seu corpo (frontmatter à parte — `criado`/
+ * `atualizado` não contam como conteúdo) não tem nenhum caractere não-whitespace. Usada pelo
+ * indicador visual do Daily Desk: um dia cuja nota só foi criada (ex.: visitada no calendário,
+ * mas nunca recebeu texto) deve aparecer sem o ponto, no mesmo estado visual de um dia sem nota
+ * nenhuma. */
+export function isDailyNoteContentEmpty(content: string): boolean {
+  return parseFrontmatter(content).body.trim().length === 0
 }
 
 export function removeIncompleteTaskLines(content: string): string {

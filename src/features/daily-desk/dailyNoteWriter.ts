@@ -6,6 +6,7 @@ import {
   dateFromDailyNoteFilename,
   extractIncompleteTaskLines,
   formatIsoDate,
+  isDailyNoteContentEmpty,
   mostRecentDateBefore,
   removeIncompleteTaskLines,
 } from '@/entities/DailyNote'
@@ -22,6 +23,22 @@ export async function listDailyDates(): Promise<string[]> {
   } catch {
     return []
   }
+}
+
+/** Como `listDailyDates`, mas só retorna datas cuja nota tem conteúdo de fato — usada pelo
+ * indicador visual (ponto) do calendário do Daily Desk, que não deve marcar um dia cuja nota foi
+ * criada (ex.: só visitada no calendário) mas nunca chegou a receber texto: esse dia deve
+ * aparecer no mesmo estado visual de um dia sem nota nenhuma. */
+export async function listDatesWithContent(): Promise<string[]> {
+  const dates = await listDailyDates()
+  const adapter = getStorageAdapter()
+  const nonEmptyDates = await Promise.all(
+    dates.map(async (date) => {
+      const content = await adapter.readFile(dailyNotePath(date))
+      return isDailyNoteContentEmpty(content) ? null : date
+    }),
+  )
+  return nonEmptyDates.filter((date): date is string => date !== null)
 }
 
 async function noteExists(path: string): Promise<boolean> {

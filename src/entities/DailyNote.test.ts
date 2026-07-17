@@ -6,6 +6,7 @@ import {
   dateFromDailyNoteFilename,
   extractIncompleteTaskLines,
   formatIsoDate,
+  isDailyNoteContentEmpty,
   mostRecentDateBefore,
   parseSmartDate,
   removeIncompleteTaskLines,
@@ -74,6 +75,34 @@ describe('mostRecentDateBefore', () => {
 
   it('returns null when there are no earlier dates', () => {
     expect(mostRecentDateBefore([], '2026-07-15')).toBeNull()
+  })
+})
+
+describe('isDailyNoteContentEmpty', () => {
+  it('treats an empty string as empty', () => {
+    expect(isDailyNoteContentEmpty('')).toBe(true)
+  })
+
+  it('treats whitespace-only content as empty', () => {
+    expect(isDailyNoteContentEmpty('   \n\n\t')).toBe(true)
+  })
+
+  it('treats a note with only frontmatter and no body as empty', () => {
+    expect(
+      isDailyNoteContentEmpty('---\ncriado: 2026-07-15T12:00:00.000Z\n---\n'),
+    ).toBe(true)
+  })
+
+  it('treats a note with real body text as non-empty', () => {
+    expect(isDailyNoteContentEmpty('# Hoje\nalgo escrito')).toBe(false)
+  })
+
+  it('treats a note with body text alongside frontmatter as non-empty', () => {
+    expect(
+      isDailyNoteContentEmpty(
+        '---\ncriado: 2026-07-15T12:00:00.000Z\n---\nalgo escrito',
+      ),
+    ).toBe(false)
   })
 })
 

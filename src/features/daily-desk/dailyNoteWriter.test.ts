@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { listDailyDates, openOrCreateDailyNote } from './dailyNoteWriter'
+import { listDailyDates, listDatesWithContent, openOrCreateDailyNote } from './dailyNoteWriter'
 import * as storageAdapterModule from '@/shared/storage/createStorageAdapter'
 import type { StorageAdapter } from '@/shared/storage/StorageAdapter'
 
@@ -52,6 +52,33 @@ describe('listDailyDates', () => {
       createFakeAdapter({ 'Daily/2026-07-10.md': '', 'Daily/notas-soltas.md': '' }),
     )
     expect(await listDailyDates()).toEqual(['2026-07-10'])
+  })
+})
+
+describe('listDatesWithContent', () => {
+  it('excludes dates whose note is empty', async () => {
+    vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(
+      createFakeAdapter({
+        'Daily/2026-07-10.md': 'algo escrito',
+        'Daily/2026-07-11.md': '',
+        'Daily/2026-07-12.md': '   \n',
+      }),
+    )
+    expect(await listDatesWithContent()).toEqual(['2026-07-10'])
+  })
+
+  it('excludes a date whose note only has frontmatter and no body', async () => {
+    vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(
+      createFakeAdapter({
+        'Daily/2026-07-10.md': '---\ncriado: 2026-07-10T12:00:00.000Z\n---\n',
+      }),
+    )
+    expect(await listDatesWithContent()).toEqual([])
+  })
+
+  it('returns an empty list when the Daily folder does not exist yet', async () => {
+    vi.mocked(storageAdapterModule.getStorageAdapter).mockReturnValue(createFakeAdapter())
+    expect(await listDatesWithContent()).toEqual([])
   })
 })
 
