@@ -88,9 +88,9 @@ describe('isDailyNoteContentEmpty', () => {
   })
 
   it('treats a note with only frontmatter and no body as empty', () => {
-    expect(
-      isDailyNoteContentEmpty('---\ncriado: 2026-07-15T12:00:00.000Z\n---\n'),
-    ).toBe(true)
+    expect(isDailyNoteContentEmpty('---\ncriado: 2026-07-15T12:00:00.000Z\n---\n')).toBe(
+      true,
+    )
   })
 
   it('treats a note with real body text as non-empty', () => {
@@ -99,9 +99,7 @@ describe('isDailyNoteContentEmpty', () => {
 
   it('treats a note with body text alongside frontmatter as non-empty', () => {
     expect(
-      isDailyNoteContentEmpty(
-        '---\ncriado: 2026-07-15T12:00:00.000Z\n---\nalgo escrito',
-      ),
+      isDailyNoteContentEmpty('---\ncriado: 2026-07-15T12:00:00.000Z\n---\nalgo escrito'),
     ).toBe(false)
   })
 })

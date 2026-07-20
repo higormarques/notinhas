@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { listDailyDates, listDatesWithContent, openOrCreateDailyNote } from './dailyNoteWriter'
+import {
+  listDailyDates,
+  listDatesWithContent,
+  openOrCreateDailyNote,
+} from './dailyNoteWriter'
 import * as storageAdapterModule from '@/shared/storage/createStorageAdapter'
 import type { StorageAdapter } from '@/shared/storage/StorageAdapter'
 
