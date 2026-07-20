@@ -94,6 +94,10 @@ jobs:
           # Só aqui — dev/build/preview locais continuam servindo da raiz (`/`), ver
           # `vite.config.ts`.
           VITE_BASE_PATH: /notinhas/
+          # Só aqui — gate único do GA4 (ver ADR 0008/`src/shared/analytics/ga4.ts`), nunca
+          # setado em dev/build/preview locais. Measurement ID não é segredo (fica visível no
+          # bundle publicado de qualquer forma).
+          VITE_GA4_MEASUREMENT_ID: G-J8CV11N1PP
 
       - uses: actions/configure-pages@v5
 

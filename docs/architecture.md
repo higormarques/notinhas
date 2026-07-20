@@ -309,6 +309,20 @@ sempre responsabilidade do cache do TanStack Query.
     `watchEffect` reconecta a dependência em `editor.value` e roda de novo assim que a instância
     existe.
 
+## Analytics (GA4)
+
+Ver ADR 0008 para o racional completo. Resumo do contrato:
+
+- `src/shared/analytics/ga4.ts` é o único lugar que sabe como carregar/chamar `gtag`. Nenhum
+  outro arquivo deve tocar `window.dataLayer` diretamente.
+- Gate único: `import.meta.env.VITE_GA4_MEASUREMENT_ID`, setado só no passo `pnpm build` do job
+  `deploy` do CI — nunca em dev/build/preview locais.
+- Opt-in: `useAnalyticsConsent` (`shared/composables/`) guarda a decisão em `localStorage`
+  (`notinhas-analytics-consent`); o GA4 só carrega depois de `grantConsent()`. Feature
+  `analytics-consent` (`AnalyticsConsentBanner.vue` + `useAnalyticsConsentBanner.ts`) monta o
+  banner globalmente em `App.vue`, fora do `AppShell` (independe de workspace conectado).
+- App é SPA de rota única — sem tracking de `router.afterEach`.
+
 ## Testes
 
 - Unitário (Vitest + @vue/test-utils): co-localizado com o composable/store que testa
